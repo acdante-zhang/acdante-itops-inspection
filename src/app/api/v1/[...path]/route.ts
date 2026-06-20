@@ -47,37 +47,109 @@ const templates = [
       { id: "li-12", name: "NTP时钟同步", category: "配置", command: "timedatectl status | grep -i sync || ntpq -p 2>/dev/null | head -5", command_type: "ssh", is_read_only: true, warning_text: "", parser: "raw", weight: 5, order: 12 },
     ]
   },
+  // ============ DBCheck 数据库巡检模板 (v3.0) ============
+  // 以下数据库模板由 DBCheck 引擎驱动，提供 70-130+ 项专业巡检
   {
-    id: "tpl-oracle-19c-v1", name: "Oracle 19c巡检模板", target_type: "oracle", brand: "Oracle", version: "v1.0.0", description: "Oracle 19c数据库健康巡检，包含实例状态、表空间、性能指标、安全配置等", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    id: "tpl-dbcheck-oracle-v3", name: "Oracle 全量巡检 (DBCheck引擎)", target_type: "oracle", brand: "Oracle", version: "v3.0.0", description: "基于DBCheck v2.6.0引擎的Oracle数据库全量巡检，涵盖实例状态、表空间、ASM、DataGuard、AWR、备份恢复、安全审计、性能诊断等130+巡检项。支持10g/11g/12c/19c/21c全版本自适应。", is_builtin: true, created_by: "system (DBCheck)", created_at: ago(720), updated_at: ago(0.1),
+    is_dbcheck: true, dbcheck_type: "oracle", item_count: 130,
     items: [
-      { id: "oi-01", name: "数据库实例状态", category: "实例", command: "SELECT STATUS, DATABASE_STATUS FROM V$INSTANCE", command_type: "sql", is_read_only: true, warning_text: "", parser: "raw", weight: 20, order: 1 },
-      { id: "oi-02", name: "表空间使用率", category: "存储", command: "SELECT TABLESPACE_NAME, ROUND(USED_PCT,2) FROM DBA_TABLESPACE_USAGE_METRICS", command_type: "sql", is_read_only: true, warning_text: "", parser: "raw", threshold: { metric: "tbs_usage", operator: "gt", critical: 95, warning: 85, unit: "%" }, suggestion: "扩容表空间或清理历史数据", weight: 20, order: 2 },
-      { id: "oi-03", name: "SGA/PGA使用率", category: "内存", command: "SELECT NAME, ROUND(VALUE/1024/1024,2) SIZE_MB FROM V$SGAINFO", command_type: "sql", is_read_only: true, warning_text: "", parser: "raw", weight: 10, order: 3 },
-      { id: "oi-04", name: "活跃会话数", category: "会话", command: "SELECT COUNT(*) FROM V$SESSION WHERE STATUS='ACTIVE'", command_type: "sql", is_read_only: true, warning_text: "", parser: "raw", threshold: { metric: "active_sessions", operator: "gt", critical: 500, warning: 300, unit: "" }, weight: 15, order: 4 },
-      { id: "oi-05", name: "锁阻塞检测", category: "锁", command: "SELECT BLOCKING_SESSION, COUNT(*) FROM V$SESSION WHERE BLOCKING_SESSION IS NOT NULL GROUP BY BLOCKING_SESSION", command_type: "sql", is_read_only: true, warning_text: "", parser: "raw", weight: 20, order: 5 },
-      { id: "oi-06", name: "RMAN备份状态", category: "备份", command: "SELECT STATUS, START_TIME, END_TIME FROM V$RMAN_BACKUP_JOB_DETAILS WHERE START_TIME > SYSDATE-7", command_type: "sql", is_read_only: true, warning_text: "", parser: "raw", weight: 15, order: 6 },
-      { id: "oi-07", name: "归档日志空间", category: "存储", command: "SELECT NAME, SPACE_LIMIT/1024/1024/1024 LIMIT_GB, SPACE_USED/1024/1024/1024 USED_GB FROM V$RECOVERY_FILE_DEST", command_type: "sql", is_read_only: true, warning_text: "", parser: "raw", threshold: { metric: "arch_usage", operator: "gt", critical: 90, warning: 75, unit: "%" }, weight: 10, order: 7 },
-      { id: "oi-08", name: "无效对象检查", category: "对象", command: "SELECT OWNER, OBJECT_TYPE, COUNT(*) FROM DBA_OBJECTS WHERE STATUS='INVALID' GROUP BY OWNER, OBJECT_TYPE", command_type: "sql", is_read_only: true, warning_text: "", parser: "raw", weight: 5, order: 8 },
+      { id: "dbo-01", name: "数据库实例状态", category: "实例", command: "dbcheck:instance_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 1 },
+      { id: "dbo-02", name: "表空间使用率", category: "存储", command: "dbcheck:tablespace_usage", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "tbs_usage", operator: "gt", critical: 95, warning: 85, unit: "%" }, suggestion: "扩容表空间或清理历史数据", weight: 20, order: 2 },
+      { id: "dbo-03", name: "ASM磁盘组状态", category: "存储", command: "dbcheck:asm_diskgroup", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 3 },
+      { id: "dbo-04", name: "DataGuard同步状态", category: "容灾", command: "dbcheck:dataguard_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "dbo-05", name: "DG同步延迟", category: "容灾", command: "dbcheck:dg_lag", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "dg_lag", operator: "gt", critical: 60, warning: 10, unit: "秒" }, weight: 15, order: 5 },
+      { id: "dbo-06", name: "SGA/PGA使用率", category: "内存", command: "dbcheck:sga_pga", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 6 },
+      { id: "dbo-07", name: "活跃会话数", category: "会话", command: "dbcheck:active_sessions", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "sessions", operator: "gt", critical: 500, warning: 300, unit: "" }, weight: 10, order: 7 },
+      { id: "dbo-08", name: "锁阻塞检测", category: "锁", command: "dbcheck:lock_blocking", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 8, suggestion: "检查阻塞会话，必要时终止" },
+      { id: "dbo-09", name: "RMAN备份状态", category: "备份", command: "dbcheck:rman_backup", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 9 },
+      { id: "dbo-10", name: "归档日志空间", category: "存储", command: "dbcheck:archive_log", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "arch_usage", operator: "gt", critical: 90, warning: 75, unit: "%" }, weight: 10, order: 10 },
+      { id: "dbo-11", name: "AWR性能概览", category: "性能", command: "dbcheck:awr_overview", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 11 },
+      { id: "dbo-12", name: "无效对象检查", category: "对象", command: "dbcheck:invalid_objects", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 5, order: 12 },
+      { id: "dbo-13", name: "Redo日志切换频率", category: "日志", command: "dbcheck:redo_switch", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 13 },
+      { id: "dbo-14", name: "Undo表空间状态", category: "存储", command: "dbcheck:undo_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 14 },
+      { id: "dbo-15", name: "用户权限审计", category: "安全", command: "dbcheck:user_audit", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 15 },
     ]
   },
   {
-    id: "tpl-oracle-11g-v1", name: "Oracle 11g巡检模板", target_type: "oracle", brand: "Oracle", version: "v1.0.0", description: "Oracle 11g数据库巡检模板，参考DBCheck巡检脚本", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    id: "tpl-dbcheck-mysql-v3", name: "MySQL 全量巡检 (DBCheck引擎)", target_type: "mysql", brand: "Oracle", version: "v3.0.0", description: "基于DBCheck v2.6.0引擎的MySQL数据库全量巡检，涵盖主从复制、InnoDB缓冲池、慢查询、连接池、锁等待、binlog、安全配置等80+巡检项。支持5.7/8.0/8.4版本。", is_builtin: true, created_by: "system (DBCheck)", created_at: ago(720), updated_at: ago(0.1),
+    is_dbcheck: true, dbcheck_type: "mysql", item_count: 80,
     items: [
-      { id: "o11g-01", name: "数据库基本信息", category: "实例", command: "SELECT d.DBID, d.NAME, d.DATABASE_ROLE FROM V$DATABASE d, V$INSTANCE i", command_type: "sql", is_read_only: true, parser: "raw", weight: 10, order: 1 },
-      { id: "o11g-02", name: "表空间使用率", category: "存储", command: "SELECT TABLESPACE_NAME, ROUND((1-NVL(FREE_BYTES,0)/TOTAL_BYTES)*100,2) FROM DBA_TABLESPACE_USAGE", command_type: "sql", is_read_only: true, parser: "raw", threshold: { metric: "tbs_usage", operator: "gt", critical: 95, warning: 85, unit: "%" }, weight: 20, order: 2 },
-      { id: "o11g-03", name: "SGA统计", category: "内存", command: "SELECT NAME, VALUE/1024/1024 SIZE_MB FROM V$SGA", command_type: "sql", is_read_only: true, parser: "raw", weight: 10, order: 3 },
-      { id: "o11g-04", name: "TOP 10 SQL", category: "性能", command: "SELECT SQL_ID, EXECUTIONS, ELAPSED_TIME/1000000 ELAPSED_SEC FROM V$SQLAREA ORDER BY ELAPSED_TIME DESC WHERE ROWNUM<=10", command_type: "sql", is_read_only: true, parser: "raw", weight: 10, order: 4 },
-      { id: "o11g-05", name: "备份状态", category: "备份", command: "SELECT * FROM V$RMAN_BACKUP_JOB_DETAILS ORDER BY START_TIME DESC WHERE ROWNUM<=5", command_type: "sql", is_read_only: true, parser: "raw", weight: 15, order: 5 },
+      { id: "dbm-01", name: "数据库实例状态", category: "实例", command: "dbcheck:instance_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 1 },
+      { id: "dbm-02", name: "InnoDB缓冲池命中率", category: "内存", command: "dbcheck:innodb_buffer_pool", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "buffer_hit", operator: "lt", critical: 95, warning: 98, unit: "%" }, suggestion: "增加innodb_buffer_pool_size", weight: 20, order: 2 },
+      { id: "dbm-03", name: "主从复制状态", category: "复制", command: "dbcheck:replication_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 3 },
+      { id: "dbm-04", name: "慢查询统计", category: "性能", command: "dbcheck:slow_queries", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "dbm-05", name: "连接数使用率", category: "连接", command: "dbcheck:connection_usage", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "conn_usage", operator: "gt", critical: 90, warning: 75, unit: "%" }, suggestion: "增加max_connections或优化连接池", weight: 15, order: 5 },
+      { id: "dbm-06", name: "表锁等待", category: "锁", command: "dbcheck:table_locks", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 6 },
+      { id: "dbm-07", name: "binlog状态", category: "日志", command: "dbcheck:binlog_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 7 },
+      { id: "dbm-08", name: "查询缓存命中率", category: "缓存", command: "dbcheck:query_cache", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 8 },
+      { id: "dbm-09", name: "表状态检查", category: "对象", command: "dbcheck:table_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 9 },
     ]
   },
   {
-    id: "tpl-oracle-12c-v1", name: "Oracle 12c巡检模板", target_type: "oracle", brand: "Oracle", version: "v1.0.0", description: "Oracle 12c数据库巡检模板，支持CDB/PDB架构", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    id: "tpl-dbcheck-pg-v3", name: "PostgreSQL 全量巡检 (DBCheck引擎)", target_type: "postgres", brand: "PostgreSQL", version: "v3.0.0", description: "基于DBCheck v2.6.0引擎的PostgreSQL数据库全量巡检，涵盖归档模式、缓存命中率、死元组、复制状态、锁等待、连接数、配置基线等70+巡检项。支持12/13/14/15/16版本。", is_builtin: true, created_by: "system (DBCheck)", created_at: ago(720), updated_at: ago(0.1),
+    is_dbcheck: true, dbcheck_type: "postgresql", item_count: 70,
     items: [
-      { id: "o12c-01", name: "CDB/PDB状态", category: "实例", command: "SELECT CON_ID, NAME, OPEN_MODE FROM V$PDBS", command_type: "sql", is_read_only: true, parser: "raw", weight: 20, order: 1 },
-      { id: "o12c-02", name: "表空间使用率", category: "存储", command: "SELECT CON_ID, TABLESPACE_NAME, ROUND(USED_PCT,2) FROM CDB_TABLESPACE_USAGE_METRICS", command_type: "sql", is_read_only: true, parser: "raw", threshold: { metric: "tbs_usage", operator: "gt", critical: 95, warning: 85, unit: "%" }, weight: 20, order: 2 },
-      { id: "o12c-03", name: "AWR性能概览", category: "性能", command: "SELECT SNAP_ID, BEGIN_INTERVAL_TIME FROM DBA_HIST_SNAPSHOT ORDER BY SNAP_ID DESC FETCH FIRST 5 ROWS ONLY", command_type: "sql", is_read_only: true, parser: "raw", weight: 10, order: 3 },
+      { id: "dbp-01", name: "数据库实例状态", category: "实例", command: "dbcheck:instance_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 1 },
+      { id: "dbp-02", name: "缓存命中率", category: "缓存", command: "dbcheck:cache_hit_ratio", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "cache_hit", operator: "lt", critical: 95, warning: 98, unit: "%" }, suggestion: "增加shared_buffers", weight: 20, order: 2 },
+      { id: "dbp-03", name: "死元组比例", category: "存储", command: "dbcheck:dead_tuples", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "dead_tuples", operator: "gt", critical: 20, warning: 10, unit: "%" }, suggestion: "执行VACUUM或调整autovacuum参数", weight: 15, order: 3 },
+      { id: "dbp-04", name: "复制状态", category: "复制", command: "dbcheck:replication", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "dbp-05", name: "连接数使用率", category: "连接", command: "dbcheck:connection_usage", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "conn_usage", operator: "gt", critical: 90, warning: 75, unit: "%" }, weight: 15, order: 5 },
+      { id: "dbp-06", name: "锁等待", category: "锁", command: "dbcheck:lock_waiting", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 6 },
+      { id: "dbp-07", name: "归档模式", category: "备份", command: "dbcheck:archive_mode", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 7 },
+      { id: "dbp-08", name: "数据库大小", category: "存储", command: "dbcheck:db_size", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 8 },
     ]
   },
+  {
+    id: "tpl-dbcheck-sqlserver-v3", name: "SQL Server 全量巡检 (DBCheck引擎)", target_type: "mssql", brand: "Microsoft", version: "v3.0.0", description: "基于DBCheck v2.6.0引擎的SQL Server数据库全量巡检，涵盖等待统计、锁与阻塞、备份状态、文件使用率、索引健康、安全审计等60+巡检项。支持2016/2017/2019/2022版本。", is_builtin: true, created_by: "system (DBCheck)", created_at: ago(720), updated_at: ago(0.1),
+    is_dbcheck: true, dbcheck_type: "sqlserver", item_count: 60,
+    items: [
+      { id: "dbs-01", name: "数据库状态", category: "实例", command: "dbcheck:instance_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 1 },
+      { id: "dbs-02", name: "等待统计", category: "性能", command: "dbcheck:wait_stats", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 2 },
+      { id: "dbs-03", name: "锁与阻塞", category: "锁", command: "dbcheck:lock_blocking", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 3 },
+      { id: "dbs-04", name: "备份状态", category: "备份", command: "dbcheck:backup_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "dbs-05", name: "文件使用率", category: "存储", command: "dbcheck:file_usage", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "file_usage", operator: "gt", critical: 90, warning: 80, unit: "%" }, weight: 15, order: 5 },
+      { id: "dbs-06", name: "索引碎片", category: "对象", command: "dbcheck:index_frag", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 6 },
+    ]
+  },
+  // ============ 新增国产数据库 DBCheck 模板 ============
+  {
+    id: "tpl-dbcheck-dm8-v3", name: "达梦DM8 全量巡检 (DBCheck引擎)", target_type: "dm8", brand: "达梦", version: "v3.0.0", description: "基于DBCheck v2.6.0引擎的达梦DM8数据库全量巡检，涵盖表空间、SGA/PGA、缓冲池、配置基线、索引健康、备份状态等70+巡检项。", is_builtin: true, created_by: "system (DBCheck)", created_at: ago(720), updated_at: ago(0.1),
+    is_dbcheck: true, dbcheck_type: "dm8", item_count: 70,
+    items: [
+      { id: "dbd-01", name: "数据库实例状态", category: "实例", command: "dbcheck:instance_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 1 },
+      { id: "dbd-02", name: "表空间使用率", category: "存储", command: "dbcheck:tablespace_usage", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "tbs_usage", operator: "gt", critical: 95, warning: 85, unit: "%" }, weight: 20, order: 2 },
+      { id: "dbd-03", name: "SGA/PGA使用率", category: "内存", command: "dbcheck:sga_pga", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 3 },
+      { id: "dbd-04", name: "缓冲池命中率", category: "缓存", command: "dbcheck:buffer_hit", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "dbd-05", name: "配置基线检查", category: "配置", command: "dbcheck:config_baseline", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 5 },
+      { id: "dbd-06", name: "索引健康检查", category: "对象", command: "dbcheck:index_health", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 6 },
+      { id: "dbd-07", name: "备份状态", category: "备份", command: "dbcheck:backup_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 7 },
+    ]
+  },
+  {
+    id: "tpl-dbcheck-tidb-v3", name: "TiDB 全量巡检 (DBCheck引擎)", target_type: "tidb", brand: "PingCAP", version: "v3.0.0", description: "基于DBCheck v2.6.0引擎的TiDB分布式数据库全量巡检，涵盖Placement Rules、TiCDC状态、PD心跳、Follower延迟、慢查询分析、连接池等60+巡检项。", is_builtin: true, created_by: "system (DBCheck)", created_at: ago(720), updated_at: ago(0.1),
+    is_dbcheck: true, dbcheck_type: "tidb", item_count: 60,
+    items: [
+      { id: "dbt-01", name: "集群状态概览", category: "集群", command: "dbcheck:cluster_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 1 },
+      { id: "dbt-02", name: "Placement Rules", category: "配置", command: "dbcheck:placement_rules", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 2 },
+      { id: "dbt-03", name: "TiCDC状态", category: "复制", command: "dbcheck:ticdc_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 3 },
+      { id: "dbt-04", name: "PD心跳", category: "集群", command: "dbcheck:pd_heartbeat", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "dbt-05", name: "Follower延迟", category: "复制", command: "dbcheck:follower_lag", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "follower_lag", operator: "gt", critical: 60, warning: 10, unit: "秒" }, weight: 15, order: 5 },
+      { id: "dbt-06", name: "慢查询分析", category: "性能", command: "dbcheck:slow_query", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 6 },
+      { id: "dbt-07", name: "连接数使用率", category: "连接", command: "dbcheck:connection_usage", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 7 },
+    ]
+  },
+  {
+    id: "tpl-dbcheck-kingbase-v3", name: "KingbaseES 全量巡检 (DBCheck引擎)", target_type: "kingbase", brand: "人大金仓", version: "v3.0.0", description: "基于DBCheck v2.6.0引擎的KingbaseES数据库全量巡检，涵盖实例状态、表空间、复制状态、锁等待、配置基线等50+巡检项。", is_builtin: true, created_by: "system (DBCheck)", created_at: ago(720), updated_at: ago(0.1),
+    is_dbcheck: true, dbcheck_type: "kingbase", item_count: 50,
+    items: [
+      { id: "dbk-01", name: "实例状态", category: "实例", command: "dbcheck:instance_status", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 20, order: 1 },
+      { id: "dbk-02", name: "表空间使用率", category: "存储", command: "dbcheck:tablespace_usage", command_type: "dbcheck", is_read_only: true, parser: "raw", threshold: { metric: "tbs_usage", operator: "gt", critical: 95, warning: 85, unit: "%" }, weight: 20, order: 2 },
+      { id: "dbk-03", name: "复制状态", category: "复制", command: "dbcheck:replication", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 3 },
+      { id: "dbk-04", name: "锁等待", category: "锁", command: "dbcheck:lock_waiting", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "dbk-05", name: "配置基线", category: "配置", command: "dbcheck:config_baseline", command_type: "dbcheck", is_read_only: true, parser: "raw", weight: 10, order: 5 },
+    ]
+  },
+  // ============ 保留的非数据库模板 ============
   {
     id: "tpl-network-huawei-v1", name: "华为网络设备巡检模板", target_type: "network", brand: "华为", version: "v1.0.0", description: "华为交换机/路由器/防火墙通用巡检模板", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
     items: [
@@ -155,23 +227,122 @@ const templates = [
       { id: "aix-06", name: "HACMP状态", category: "集群", command: "clstat 2>/dev/null || echo 'HACMP not configured'", command_type: "ssh", is_read_only: true, parser: "raw", weight: 10, order: 6 },
     ]
   },
+  // ============ SNMP 巡检模板（新增） ============
   {
-    id: "tpl-mysql-8-v1", name: "MySQL 8.0巡检模板", target_type: "mysql", brand: "Oracle", version: "v1.0.0", description: "MySQL 8.0数据库巡检模板", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    id: "tpl-snmp-huawei-switch-v1", name: "华为交换机SNMP巡检模板", target_type: "network", brand: "华为", version: "v2.0.0", description: "华为交换机/路由器SNMP巡检模板，通过SNMP协议采集CPU、内存、温度、接口流量、错误包等", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
     items: [
-      { id: "my8-01", name: "实例状态", category: "实例", command: "SHOW GLOBAL STATUS LIKE 'Threads_connected'; SHOW GLOBAL STATUS LIKE 'Threads_running'", command_type: "sql", is_read_only: true, parser: "raw", weight: 15, order: 1 },
-      { id: "my8-02", name: "InnoDB缓冲池", category: "内存", command: "SHOW GLOBAL STATUS LIKE 'Innodb_buffer_pool%'", command_type: "sql", is_read_only: true, parser: "raw", weight: 15, order: 2 },
-      { id: "my8-03", name: "慢查询统计", category: "性能", command: "SHOW GLOBAL STATUS LIKE 'Slow_queries'", command_type: "sql", is_read_only: true, parser: "raw", weight: 15, order: 3 },
-      { id: "my8-04", name: "主从复制状态", category: "复制", command: "SHOW SLAVE STATUS\\G", command_type: "sql", is_read_only: true, parser: "raw", weight: 20, order: 4 },
-      { id: "my8-05", name: "连接数", category: "连接", command: "SHOW VARIABLES LIKE 'max_connections'; SHOW GLOBAL STATUS LIKE 'Max_used_connections'", command_type: "sql", is_read_only: true, parser: "raw", threshold: { metric: "conn_usage", operator: "gt", critical: 90, warning: 75, unit: "%" }, weight: 15, order: 5 },
+      { id: "snmp-hw-01", name: "系统描述", category: "系统", command: "snmp:1.3.6.1.2.1.1.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 1 },
+      { id: "snmp-hw-02", name: "系统运行时间", category: "系统", command: "snmp:1.3.6.1.2.1.1.3.0", command_type: "snmp", is_read_only: true, parser: "ticks_to_uptime", weight: 5, order: 2 },
+      { id: "snmp-hw-03", name: "CPU使用率(%)", category: "CPU", command: "snmp:1.3.6.1.4.1.2011.6.3.4.1.3.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "cpu_usage", operator: "gt", critical: 90, warning: 70, unit: "%" }, suggestion: "检查异常进程或高流量，考虑升级硬件", weight: 20, order: 3 },
+      { id: "snmp-hw-04", name: "CPU温度(°C)", category: "硬件", command: "snmp:1.3.6.1.4.1.2011.6.3.4.1.7.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "temperature", operator: "gt", critical: 75, warning: 65, unit: "°C" }, suggestion: "检查机房环境温度、设备风扇状态", weight: 15, order: 4 },
+      { id: "snmp-hw-05", name: "内存使用率(%)", category: "内存", command: "snmp:1.3.6.1.4.1.2011.6.3.5.1.4.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "mem_usage", operator: "gt", critical: 85, warning: 70, unit: "%" }, suggestion: "检查内存泄漏或减少路由表规模", weight: 20, order: 5 },
+      { id: "snmp-hw-06", name: "接口入错误包", category: "接口", command: "snmp:1.3.6.1.2.1.2.2.1.14", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "if_in_errors", operator: "gt", critical: 100, warning: 10, unit: "包" }, suggestion: "检查光纤模块、线路质量", weight: 15, order: 6 },
+      { id: "snmp-hw-07", name: "设备温度", category: "硬件", command: "snmp:1.3.6.1.4.1.2011.6.3.3.1.9.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "temperature", operator: "gt", critical: 70, warning: 60, unit: "°C" }, weight: 10, order: 7 },
+      { id: "snmp-hw-08", name: "风扇状态", category: "硬件", command: "snmp:1.3.6.1.4.1.2011.6.3.3.1.5.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 10, order: 8 },
+      { id: "snmp-hw-09", name: "电源状态", category: "硬件", command: "snmp:1.3.6.1.4.1.2011.6.3.3.1.7.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 10, order: 9 },
     ]
   },
   {
-    id: "tpl-pg-15-v1", name: "PostgreSQL 15巡检模板", target_type: "postgres", brand: "PostgreSQL", version: "v1.0.0", description: "PostgreSQL 15数据库巡检模板", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    id: "tpl-snmp-h3c-switch-v1", name: "华三交换机SNMP巡检模板", target_type: "network", brand: "华三", version: "v2.0.0", description: "华三交换机/路由器SNMP巡检模板，通过SNMP协议采集CPU、内存、温度等", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
     items: [
-      { id: "pg-01", name: "连接数", category: "连接", command: "SELECT count(*) FROM pg_stat_activity; SHOW max_connections", command_type: "sql", is_read_only: true, parser: "raw", weight: 15, order: 1 },
-      { id: "pg-02", name: "数据库大小", category: "存储", command: "SELECT datname, pg_size_pretty(pg_database_size(datname)) FROM pg_database WHERE datistemplate = false", command_type: "sql", is_read_only: true, parser: "raw", weight: 15, order: 2 },
-      { id: "pg-03", name: "复制状态", category: "复制", command: "SELECT * FROM pg_stat_replication", command_type: "sql", is_read_only: true, parser: "raw", weight: 15, order: 3 },
-      { id: "pg-04", name: "死锁检查", category: "锁", command: "SELECT * FROM pg_locks WHERE NOT granted", command_type: "sql", is_read_only: true, parser: "raw", weight: 20, order: 4 },
+      { id: "snmp-h3c-01", name: "系统描述", category: "系统", command: "snmp:1.3.6.1.2.1.1.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 1 },
+      { id: "snmp-h3c-02", name: "系统运行时间", category: "系统", command: "snmp:1.3.6.1.2.1.1.3.0", command_type: "snmp", is_read_only: true, parser: "ticks_to_uptime", weight: 5, order: 2 },
+      { id: "snmp-h3c-03", name: "CPU使用率(%)", category: "CPU", command: "snmp:1.3.6.1.4.1.25506.2.6.1.1.1.1.6.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "cpu_usage", operator: "gt", critical: 90, warning: 70, unit: "%" }, weight: 20, order: 3 },
+      { id: "snmp-h3c-04", name: "内存使用率(%)", category: "内存", command: "snmp:1.3.6.1.4.1.25506.2.6.1.1.1.1.8.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "mem_usage", operator: "gt", critical: 85, warning: 70, unit: "%" }, weight: 20, order: 4 },
+      { id: "snmp-h3c-05", name: "设备温度(°C)", category: "硬件", command: "snmp:1.3.6.1.4.1.25506.2.6.1.1.1.1.12.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "temperature", operator: "gt", critical: 70, warning: 60, unit: "°C" }, weight: 10, order: 5 },
+      { id: "snmp-h3c-06", name: "风扇状态", category: "硬件", command: "snmp:1.3.6.1.4.1.25506.2.6.1.1.1.1.14.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 10, order: 6 },
+      { id: "snmp-h3c-07", name: "接口入错误包", category: "接口", command: "snmp:1.3.6.1.2.1.2.2.1.14", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "if_in_errors", operator: "gt", critical: 100, warning: 10, unit: "包" }, weight: 15, order: 7 },
+    ]
+  },
+  {
+    id: "tpl-snmp-cisco-switch-v1", name: "思科交换机SNMP巡检模板", target_type: "network", brand: "思科", version: "v2.0.0", description: "思科Catalyst/Nexus交换机SNMP巡检模板", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    items: [
+      { id: "snmp-cisco-01", name: "系统描述", category: "系统", command: "snmp:1.3.6.1.2.1.1.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 1 },
+      { id: "snmp-cisco-02", name: "系统运行时间", category: "系统", command: "snmp:1.3.6.1.2.1.1.3.0", command_type: "snmp", is_read_only: true, parser: "ticks_to_uptime", weight: 5, order: 2 },
+      { id: "snmp-cisco-03", name: "CPU 5分钟负载(%)", category: "CPU", command: "snmp:1.3.6.1.4.1.9.9.109.1.1.1.1.7.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "cpu_usage", operator: "gt", critical: 90, warning: 70, unit: "%" }, suggestion: "检查路由表大小、STP收敛", weight: 20, order: 3 },
+      { id: "snmp-cisco-04", name: "已用内存", category: "内存", command: "snmp:1.3.6.1.4.1.9.9.48.1.1.1.5.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "snmp-cisco-05", name: "温度状态", category: "硬件", command: "snmp:1.3.6.1.4.1.9.9.13.1.3.1.6.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 5 },
+      { id: "snmp-cisco-06", name: "风扇状态", category: "硬件", command: "snmp:1.3.6.1.4.1.9.9.13.1.4.1.3.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 10, order: 6 },
+      { id: "snmp-cisco-07", name: "接口入错误包", category: "接口", command: "snmp:1.3.6.1.2.1.2.2.1.14", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "if_in_errors", operator: "gt", critical: 100, warning: 10, unit: "包" }, weight: 15, order: 7 },
+    ]
+  },
+  {
+    id: "tpl-snmp-f5-v1", name: "F5 BIG-IP负载均衡SNMP巡检模板", target_type: "network", brand: "F5", version: "v2.0.0", description: "F5 BIG-IP负载均衡SNMP巡检模板，覆盖CPU、内存、连接、池状态", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    items: [
+      { id: "snmp-f5-01", name: "系统描述", category: "系统", command: "snmp:1.3.6.1.2.1.1.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 1 },
+      { id: "snmp-f5-02", name: "系统运行时间", category: "系统", command: "snmp:1.3.6.1.2.1.1.3.0", command_type: "snmp", is_read_only: true, parser: "ticks_to_uptime", weight: 5, order: 2 },
+      { id: "snmp-f5-03", name: "CPU使用率(%)", category: "CPU", command: "snmp:1.3.6.1.4.1.3375.2.1.1.2.1.44.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "cpu_usage", operator: "gt", critical: 90, warning: 70, unit: "%" }, weight: 20, order: 3 },
+      { id: "snmp-f5-04", name: "总连接数", category: "连接", command: "snmp:1.3.6.1.4.1.3375.2.1.1.2.1.39.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 4 },
+      { id: "snmp-f5-05", name: "活跃连接数", category: "连接", command: "snmp:1.3.6.1.4.1.3375.2.1.1.2.1.40.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "active_conns", operator: "gt", critical: 500000, warning: 250000, unit: "连接" }, weight: 20, order: 5 },
+      { id: "snmp-f5-06", name: "池可用状态", category: "池", command: "snmp:1.3.6.1.4.1.3375.2.2.5.5.2.1.6", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 6 },
+      { id: "snmp-f5-07", name: "虚拟服务状态", category: "虚拟服务", command: "snmp:1.3.6.1.4.1.3375.2.2.10.13.2.1.3", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 7 },
+    ]
+  },
+  {
+    id: "tpl-snmp-dell-server-v1", name: "Dell服务器iDRAC SNMP巡检模板", target_type: "bmc", brand: "Dell", version: "v2.0.0", description: "Dell PowerEdge服务器iDRAC SNMP巡检模板，覆盖硬件健康、磁盘、电源、风扇", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    items: [
+      { id: "snmp-dell-01", name: "系统全局状态", category: "系统", command: "snmp:1.3.6.1.4.1.674.10892.1.200.10.1.2.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 20, order: 1, suggestion: "检查iDRAC管理界面查看具体告警" },
+      { id: "snmp-dell-02", name: "电源状态", category: "电源", command: "snmp:1.3.6.1.4.1.674.10892.1.200.10.1.5.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 2, suggestion: "检查电源模块连接和状态" },
+      { id: "snmp-dell-03", name: "风扇状态", category: "散热", command: "snmp:1.3.6.1.4.1.674.10892.1.200.10.1.8.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 10, order: 3, suggestion: "检查风扇是否正常运转" },
+      { id: "snmp-dell-04", name: "温度状态", category: "散热", command: "snmp:1.3.6.1.4.1.674.10892.1.200.10.1.9.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 4, suggestion: "检查机房环境和散热" },
+      { id: "snmp-dell-05", name: "内存状态", category: "内存", command: "snmp:1.3.6.1.4.1.674.10892.1.200.10.1.11.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 5, suggestion: "检查内存模块是否故障" },
+      { id: "snmp-dell-06", name: "存储状态", category: "存储", command: "snmp:1.3.6.1.4.1.674.10892.1.200.10.1.14.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 15, order: 6, suggestion: "检查硬盘状态和RAID控制器" },
+      { id: "snmp-dell-07", name: "处理器状态", category: "CPU", command: "snmp:1.3.6.1.4.1.674.10892.1.200.10.1.15.1", command_type: "snmp", is_read_only: true, parser: "raw", weight: 10, order: 7 },
+    ]
+  },
+  {
+    id: "tpl-snmp-linux-server-v1", name: "Linux服务器SNMP巡检模板", target_type: "linux", brand: "Generic", version: "v2.0.0", description: "Linux服务器通用SNMP巡检模板（需安装net-snmp），覆盖CPU、内存、磁盘、负载", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    items: [
+      { id: "snmp-lnx-01", name: "系统描述", category: "系统", command: "snmp:1.3.6.1.2.1.1.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 1 },
+      { id: "snmp-lnx-02", name: "系统运行时间", category: "系统", command: "snmp:1.3.6.1.2.1.1.3.0", command_type: "snmp", is_read_only: true, parser: "ticks_to_uptime", weight: 5, order: 2 },
+      { id: "snmp-lnx-03", name: "系统负载1分钟", category: "CPU", command: "snmp:1.3.6.1.4.1.2021.10.1.3.1", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "load_avg", operator: "gt", critical: 16, warning: 8, unit: "" }, weight: 20, order: 3 },
+      { id: "snmp-lnx-04", name: "可用物理内存(KB)", category: "内存", command: "snmp:1.3.6.1.4.1.2021.4.6.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 20, order: 4, suggestion: "内存不足，检查内存泄漏或增加内存" },
+      { id: "snmp-lnx-05", name: "磁盘使用率(%)", category: "磁盘", command: "snmp:1.3.6.1.4.1.2021.9.1.9", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "disk_usage", operator: "gt", critical: 90, warning: 80, unit: "%" }, suggestion: "清理无用文件或扩容磁盘", weight: 20, order: 5 },
+      { id: "snmp-lnx-06", name: "Inode使用率(%)", category: "磁盘", command: "snmp:1.3.6.1.4.1.2021.9.1.10", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "inode_usage", operator: "gt", critical: 90, warning: 80, unit: "%" }, weight: 10, order: 6 },
+      { id: "snmp-lnx-07", name: "进程数", category: "系统", command: "snmp:1.3.6.1.2.1.25.1.6.0", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "processes", operator: "gt", critical: 1000, warning: 500, unit: "进程" }, weight: 10, order: 7 },
+    ]
+  },
+  {
+    id: "tpl-snmp-sangfor-v1", name: "深信服设备SNMP巡检模板", target_type: "network", brand: "深信服", version: "v2.0.0", description: "深信服上网行为管理/防火墙SNMP巡检模板", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    items: [
+      { id: "snmp-sf-01", name: "系统状态", category: "系统", command: "snmp:1.3.6.1.4.1.35047.1.3.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 20, order: 1 },
+      { id: "snmp-sf-02", name: "CPU使用率(%)", category: "CPU", command: "snmp:1.3.6.1.4.1.35047.1.5.1.2.0", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "cpu_usage", operator: "gt", critical: 90, warning: 70, unit: "%" }, weight: 20, order: 2 },
+      { id: "snmp-sf-03", name: "内存使用率(%)", category: "内存", command: "snmp:1.3.6.1.4.1.35047.1.5.1.3.0", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "mem_usage", operator: "gt", critical: 90, warning: 80, unit: "%" }, weight: 20, order: 3 },
+      { id: "snmp-sf-04", name: "磁盘使用率(%)", category: "磁盘", command: "snmp:1.3.6.1.4.1.35047.1.5.1.4.0", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "disk_usage", operator: "gt", critical: 90, warning: 80, unit: "%" }, weight: 15, order: 4 },
+      { id: "snmp-sf-05", name: "活跃连接数", category: "性能", command: "snmp:1.3.6.1.4.1.35047.1.5.1.5.0", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "active_conns", operator: "gt", critical: 500000, warning: 250000, unit: "连接" }, weight: 15, order: 5 },
+    ]
+  },
+  {
+    id: "tpl-snmp-checkpoint-v1", name: "Checkpoint防火墙SNMP巡检模板", target_type: "network", brand: "Checkpoint", version: "v2.0.0", description: "Checkpoint防火墙SNMP巡检模板", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    items: [
+      { id: "snmp-cp-01", name: "系统描述", category: "系统", command: "snmp:1.3.6.1.2.1.1.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 1 },
+      { id: "snmp-cp-02", name: "系统运行时间", category: "系统", command: "snmp:1.3.6.1.2.1.1.3.0", command_type: "snmp", is_read_only: true, parser: "ticks_to_uptime", weight: 5, order: 2 },
+      { id: "snmp-cp-03", name: "CPU使用率(%)", category: "CPU", command: "snmp:1.3.6.1.4.1.2620.1.6.7.2.4.0", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "cpu_usage", operator: "gt", critical: 90, warning: 70, unit: "%" }, weight: 20, order: 3 },
+      { id: "snmp-cp-04", name: "内存使用率(%)", category: "内存", command: "snmp:1.3.6.1.4.1.2620.1.6.7.2.5.0", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "mem_usage", operator: "gt", critical: 90, warning: 80, unit: "%" }, weight: 20, order: 4 },
+      { id: "snmp-cp-05", name: "当前连接数", category: "性能", command: "snmp:1.3.6.1.4.1.2620.1.1.5.0", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "connections", operator: "gt", critical: 500000, warning: 250000, unit: "连接" }, weight: 20, order: 5 },
+    ]
+  },
+  {
+    id: "tpl-snmp-brocade-v1", name: "Brocade SAN交换机SNMP巡检模板", target_type: "san_switch", brand: "Brocade", version: "v2.0.0", description: "Brocade光纤交换机SNMP巡检模板，覆盖温度、端口错误、链路状态", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    items: [
+      { id: "snmp-brcd-01", name: "系统描述", category: "系统", command: "snmp:1.3.6.1.2.1.1.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 1 },
+      { id: "snmp-brcd-02", name: "系统运行时间", category: "系统", command: "snmp:1.3.6.1.2.1.1.3.0", command_type: "snmp", is_read_only: true, parser: "ticks_to_uptime", weight: 5, order: 2 },
+      { id: "snmp-brcd-03", name: "FC端口CRC错误", category: "端口", command: "snmp:1.3.6.1.4.1.1588.2.1.1.1.6.2.1.17", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "crc_errors", operator: "gt", critical: 100, warning: 10, unit: "错误" }, suggestion: "检查SFP模块和光纤线路", weight: 20, order: 3 },
+      { id: "snmp-brcd-04", name: "FC端口链路失败", category: "端口", command: "snmp:1.3.6.1.4.1.1588.2.1.1.1.6.2.1.13", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "link_failures", operator: "gt", critical: 5, warning: 1, unit: "次" }, suggestion: "检查光纤连接和SFP兼容性", weight: 20, order: 4 },
+      { id: "snmp-brcd-05", name: "温度传感器(°C)", category: "硬件", command: "snmp:1.3.6.1.4.1.1588.2.1.1.1.1.22.1.3", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "temperature", operator: "gt", critical: 70, warning: 60, unit: "°C" }, weight: 15, order: 5 },
+    ]
+  },
+  {
+    id: "tpl-snmp-generic-network-v1", name: "通用网络设备SNMP巡检模板", target_type: "network", brand: "通用", version: "v2.0.0", description: "基于标准MIB-II的通用网络设备SNMP巡检模板，适用于所有支持SNMP的网络设备", is_builtin: true, created_by: "system", created_at: ago(720), updated_at: ago(1),
+    items: [
+      { id: "snmp-gen-01", name: "系统描述", category: "系统", command: "snmp:1.3.6.1.2.1.1.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 1 },
+      { id: "snmp-gen-02", name: "系统运行时间", category: "系统", command: "snmp:1.3.6.1.2.1.1.3.0", command_type: "snmp", is_read_only: true, parser: "ticks_to_uptime", weight: 5, order: 2 },
+      { id: "snmp-gen-03", name: "接口数量", category: "接口", command: "snmp:1.3.6.1.2.1.2.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 3 },
+      { id: "snmp-gen-04", name: "接口运行状态", category: "接口", command: "snmp:1.3.6.1.2.1.2.2.1.8", command_type: "snmp", is_read_only: true, parser: "raw", weight: 20, order: 4, suggestion: "检查接口物理连接" },
+      { id: "snmp-gen-05", name: "接口入错误包", category: "接口", command: "snmp:1.3.6.1.2.1.2.2.1.14", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "if_in_errors", operator: "gt", critical: 100, warning: 10, unit: "包" }, weight: 15, order: 5 },
+      { id: "snmp-gen-06", name: "接口出错误包", category: "接口", command: "snmp:1.3.6.1.2.1.2.2.1.20", command_type: "snmp", is_read_only: true, parser: "raw", threshold: { metric: "if_out_errors", operator: "gt", critical: 100, warning: 10, unit: "包" }, weight: 15, order: 6 },
+      { id: "snmp-gen-07", name: "TCP当前连接数", category: "连接", command: "snmp:1.3.6.1.2.1.6.9.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 10, order: 7 },
+      { id: "snmp-gen-08", name: "SNMP接收包统计", category: "SNMP", command: "snmp:1.3.6.1.2.1.11.1.0", command_type: "snmp", is_read_only: true, parser: "raw", weight: 5, order: 8 },
     ]
   },
 ];
@@ -179,11 +350,11 @@ const templates = [
 // --- Tasks ---
 const tasks = [
   { id: "task-001", name: "每日核心网络巡检", template_id: "tpl-network-huawei-v1", target_ids: [1, 13, 14], schedule_type: "daily", status: "completed", last_run_at: ago(2), next_run_at: ago(-22), notify_email: ["ops@company.com"], created_by: "admin", created_at: ago(720), updated_at: ago(2) },
-  { id: "task-002", name: "Oracle生产库巡检", template_id: "tpl-oracle-19c-v1", target_ids: [3], schedule_type: "hourly", status: "completed", last_run_at: ago(1), next_run_at: ago(-0), notify_email: ["dba@company.com"], created_by: "admin", created_at: ago(480), updated_at: ago(1) },
+  { id: "task-002", name: "Oracle生产库巡检", template_id: "tpl-dbcheck-oracle-v3", target_ids: [3], schedule_type: "hourly", status: "completed", last_run_at: ago(1), next_run_at: ago(-0), notify_email: ["dba@company.com"], created_by: "admin", created_at: ago(480), updated_at: ago(1) },
   { id: "task-003", name: "Linux服务器周巡检", template_id: "tpl-linux-generic-v1", target_ids: [5, 6], schedule_type: "weekly", status: "completed", last_run_at: ago(48), next_run_at: ago(-120), created_by: "engineer", created_at: ago(240), updated_at: ago(48) },
   { id: "task-004", name: "存储设备月巡检", template_id: "tpl-storage-huawei-v1", target_ids: [9], schedule_type: "monthly", status: "pending", next_run_at: ago(-168), created_by: "admin", created_at: ago(720), updated_at: ago(720) },
   { id: "task-005", name: "SAN交换机巡检", template_id: "tpl-san-brocade-v1", target_ids: [8], schedule_type: "daily", status: "running", last_run_at: ago(0.08), created_by: "engineer", created_at: ago(360), updated_at: ago(0.08) },
-  { id: "task-006", name: "MySQL数据库巡检", template_id: "tpl-mysql-8-v1", target_ids: [11], schedule_type: "daily", status: "completed", last_run_at: ago(3), next_run_at: ago(-21), created_by: "admin", created_at: ago(180), updated_at: ago(3) },
+  { id: "task-006", name: "MySQL数据库巡检", template_id: "tpl-dbcheck-mysql-v3", target_ids: [11], schedule_type: "daily", status: "completed", last_run_at: ago(3), next_run_at: ago(-21), created_by: "admin", created_at: ago(180), updated_at: ago(3) },
 ];
 
 let nextTaskNum = 7;

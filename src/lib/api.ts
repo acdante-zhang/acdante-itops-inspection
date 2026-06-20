@@ -22,8 +22,8 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 // 类型定义
 // ============================================================
 
-export type TargetType = 'linux' | 'windows' | 'aix' | 'san_switch' | 'network' | 'bmc' | 'storage' | 'oracle' | 'mysql' | 'postgres' | 'mssql';
-export type ConnectionProtocol = 'ssh' | 'snmp' | 'jdbc' | 'odbc' | 'telnet' | 'http' | 'ipmi' | 'redfish';
+export type TargetType = 'linux' | 'windows' | 'aix' | 'san_switch' | 'network' | 'bmc' | 'storage' | 'oracle' | 'mysql' | 'postgres' | 'mssql' | 'dm8' | 'tidb' | 'kingbase' | 'gbase' | 'ivorysql' | 'yashandb';
+export type ConnectionProtocol = 'ssh' | 'snmp' | 'jdbc' | 'odbc' | 'telnet' | 'http' | 'ipmi' | 'redfish' | 'dbcheck';
 export type TaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 export type ScheduleType = 'once' | 'minutely' | 'hourly' | 'daily' | 'weekly' | 'monthly';
 export type ResultStatus = 'ok' | 'warning' | 'critical' | 'error' | 'skipped';
@@ -259,6 +259,12 @@ export const TARGET_TYPE_LABELS: Record<TargetType, string> = {
   mysql: 'MySQL',
   postgres: 'PostgreSQL',
   mssql: 'SQL Server',
+  dm8: '达梦 DM8',
+  tidb: 'TiDB',
+  kingbase: 'KingbaseES',
+  gbase: 'GBase 8s',
+  ivorysql: 'IvorySQL',
+  yashandb: 'YashanDB',
 };
 
 export const TARGET_TYPE_ICONS: Record<TargetType, string> = {
@@ -273,6 +279,12 @@ export const TARGET_TYPE_ICONS: Record<TargetType, string> = {
   mysql: '🐬',
   postgres: '🐘',
   mssql: '📊',
+  dm8: '🗄️',
+  tidb: '⚡',
+  kingbase: '👑',
+  gbase: '🔷',
+  ivorysql: '🦣',
+  yashandb: '🏔️',
 };
 
 export const STATUS_COLORS: Record<string, string> = {
@@ -308,6 +320,7 @@ export const PROTOCOL_LABELS: Record<ConnectionProtocol, string> = {
   http: 'HTTP(S)',
   ipmi: 'IPMI',
   redfish: 'Redfish',
+  dbcheck: 'DBCheck引擎',
 };
 
 export const SCHEDULE_LABELS: Record<ScheduleType, string> = {

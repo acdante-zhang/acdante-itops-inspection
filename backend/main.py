@@ -20,22 +20,22 @@ async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     # 启动时初始化数据
     get_store()
-    print("[Acdante DR Console] 后端服务已启动")
-    print("[Acdante DR Console] 四层容灾架构: 存储->虚拟化->ADG->K8s")
+    print("[Acdante ITOps] 后端服务已启动")
+    print("[Acdante ITOps] SNMP采集引擎 + 报告生成引擎已就绪")
     yield
-    print("[Acdante DR Console] 后端服务关闭")
+    print("[Acdante ITOps] 后端服务关闭")
 
 
 app = FastAPI(
-    title="Acdante DR Console",
-    description="Oracle ADG 容灾管控与可视化搭建平台 API\n\n"
-                "基于 Acdante 四层云原生容灾架构:\n"
-                "- L1 存储层: ZFS快照/秒级回滚/LZ4+ZSTD压缩\n"
-                "- L2 虚拟化层: KVM/QEMU/资源隔离\n"
-                "- L3 数据库层: ADG实时同步/DG配置/FSFO\n"
-                "- L4 编排层: K8s+OpenShift/自动切换/生命周期托管\n\n"
+    title="Acdante ITOps Inspection Platform",
+    description="企业级IT基础设施巡检平台 API\n\n"
+                "核心能力:\n"
+                "- 多协议巡检: SSH/SNMP/JDBC/Redfish/HTTP\n"
+                "- 巡检模板: 50+内置设备模板(华为/华三/思科/Dell/F5等)\n"
+                "- 报告生成: DOCX/PDF/HTML多格式报告\n"
+                "- SNMP采集: 支持v1/v2c/v3, 300+内置OID\n\n"
                 "支持 Oracle 10g/11g/19c/23c/26ai 全版本",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 

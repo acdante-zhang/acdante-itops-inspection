@@ -31,13 +31,41 @@ export default function ReportsPage() {
 
   const handleDownload = async (report: InspectionReport, format: ReportFormat) => {
     try {
-      const newReport = await api.generateReport(report.task_id, format);
-      if (newReport.download_url) {
-        window.open(newReport.download_url, '_blank');
+      if (format === 'html') {
+        // HTML下载使用原有方式
+        const newReport = await api.generateReport(report.task_id, format);
+        if (newReport.download_url) {
+          window.open(newReport.download_url, '_blank');
+        }
+      } else {
+        // DOCX/PDF 使用新的后端API生成
+        const taskId = report.task_id || 'task-unknown';
+        const res = await fetch('/api/v1/reports/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_name: report.task_name || '巡检报告',
+            task_id: taskId,
+            format: format,
+            targets: [],
+            results: report.results || [],
+            config: {
+              title: `${report.task_name || '巡检报告'}`,
+              platform_name: 'Acdante ITOps Inspection Platform',
+            }
+          }),
+        });
+        const data = await res.json();
+        if (data.paths && data.paths[format]) {
+          // 触发下载
+          window.open(`/api/v1/reports/download/${data.report_id}?format=${format}`, '_blank');
+        } else {
+          alert(`${format.toUpperCase()} 报告生成中，请稍后下载。报告ID: ${data.report_id}`);
+        }
       }
     } catch (err) {
       console.error(err);
-      alert('下载失败');
+      alert('下载失败，请确保Python后端服务正在运行');
     }
   };
 

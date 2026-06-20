@@ -10,20 +10,31 @@
 
 Enterprise-grade IT infrastructure inspection platform supporting multi-protocol, multi-device automated inspection with customizable templates, task scheduling, and comprehensive reporting.
 
+> **Latest: v3.0.0** — DBCheck Database Engine Integration + SNMP Collection Engine + Full DOCX/PDF Report Generation
+
+---
+
+### 🆕 What's New in v3.0.0
+
+| Feature | Description |
+|---------|-------------|
+| **DBCheck Database Engine** | Integrated [DBCheck v2.6.0](https://github.com/fiyo/DBCheck) — 10 database types, 130+ YAML rules, 5-dimension health scoring, AI diagnosis |
+| **SNMP Collection Engine** | Python-based SNMP v1/v2c/v3 collector with 136 built-in OIDs, 12 device templates (Huawei/H3C/Cisco/Dell/F5/etc.) |
+| **DOCX/PDF Reports** | Full DOCX (editable) and PDF report generation with cover page, health dashboard, issue summary, and detailed results |
+| **Template Expansion** | 26 built-in inspection templates (12 SNMP + 7 DBCheck + 7 infrastructure) |
+
 ### Features
 
-| Module | Description |
-|--------|-------------|
-| **Inspection Objects** | 20+ device types, 7 connection protocols (SSH/SNMP/JDBC/IPMI/Redfish/HTTP/Telnet) |
-| **Inspection Templates** | 20+ built-in templates with version/brand marking, custom inspection items |
-| **Task Scheduling** | 7 scheduling cycles (once/minutely/hourly/daily/weekly/monthly/quarterly), custom time points |
-| **Report Generation** | HTML/DOCX/PDF formats, composite reports, AI-powered analysis |
-| **Config Backup** | Version comparison, FTP/NFS/S3/local storage, scheduled backups |
-| **IP Management** | Network segment visualization, TCPING/PING detection, manual marking, history records |
-| **Knowledge Base** | Custom content, pin/bookmark, image support |
-| **System Management** | User management, audit logs, 4 notification channels (Email/DingTalk/WeChat/Feishu) |
-| **Theme Switching** | 5 built-in themes (Dark Tech/Light Business/Dopamine/Greenfield/Sunset) |
-| **AI Analysis** | OpenAI-compatible API, deep analysis and diagnosis |
+| Module | v1.0 | v3.0 |
+|--------|------|------|
+| **Inspection Objects** | 20+ device types, 7 protocols | **27+ device types, 8 protocols** (added dbcheck) |
+| **Inspection Templates** | 12 built-in templates | **26 built-in templates** (12 SNMP + 7 DBCheck DB + 7 infra) |
+| **Database Inspection** | 4 DB types, 5-10 items each | **10 DB types, 50-130+ items each** (DBCheck powered) |
+| **SNMP Monitoring** | Basic SNMP support | **Full SNMP engine**, 136 OIDs, 12 vendor templates |
+| **Report Generation** | HTML only | **DOCX + PDF + HTML**, editable Word reports |
+| **Task Scheduling** | 7 scheduling cycles | 7 cycles + DBCheck integration |
+| **Rule Engine** | Simple thresholds | **YAML rule engine** (130+ rules) + safe sandbox |
+| **Health Scoring** | Simple weighted | **5-dimension scoring** (performance/security/config/capacity/availability) |
 
 ### Supported Inspection Objects
 
@@ -31,18 +42,20 @@ Enterprise-grade IT infrastructure inspection platform supporting multi-protocol
 - **Network Devices**: Huawei/H3C switches, routers, firewalls, F5 load balancers
 - **SAN Switches**: Brocade, Cisco, Huawei, Lenovo OEM
 - **Storage**: Huawei OceanStor, EMC, NetApp
-- **Databases**: Oracle (11g/12c/19c), MySQL 8.0, PostgreSQL 15, SQL Server
+- **Databases**: Oracle (11g/12c/19c/21c), MySQL 5.7/8.0/8.4, PostgreSQL 12-16, SQL Server 2016-2022
+- **Domestic Databases**: 达梦 DM8, TiDB, KingbaseES, GBase 8s, IvorySQL, YashanDB (DBCheck powered)
 - **BMC**: Dell iDRAC (Redfish), IPMI
-- **Virtualization**: VMware ESXi, vCenter, Sangfor HCI, H3C CAS
-- **Cloud**: Alibaba Cloud, Tencent Cloud, Huawei Cloud
+- **Security**: 深信服, Checkpoint, Cisco ASA, Huawei USG
 - **Kubernetes**: Node status, Pod runtime, resource usage
 
 ### Tech Stack
 
 ```
 Frontend:  Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui
-Backend:   Next.js API Routes (Production: Go + Rust + Python)
+Backend:   Next.js API Routes + Python FastAPI (SNMP/Reports/DBCheck)
+           Production: Go + Rust + Python
 Database:  SQLite (Dev) / PostgreSQL (Production)
+Engines:   DBCheck v2.6.0 (DB Inspection) + PySNMP (SNMP) + python-docx/WeasyPrint (Reports)
 ```
 
 ### Quick Start
@@ -52,32 +65,92 @@ Database:  SQLite (Dev) / PostgreSQL (Production)
 git clone https://github.com/acdante-zhang/acdante-itops-inspection.git
 cd acdante-itops-inspection
 
-# Install dependencies
+# Install frontend dependencies
 pnpm install
 
-# Start development server
+# Install Python dependencies (for SNMP + Reports + DBCheck)
+python3 -m venv venv
+source venv/bin/activate
+pip install pysnmp python-docx weasyprint fastapi uvicorn jinja2 matplotlib pymysql psycopg2-binary docxtpl pyyaml cryptography paramiko
+
+# Start Python backend API (port 8000)
+python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
+
+# Start frontend dev server (port 5000)
 pnpm dev
 
 # Visit http://localhost:5000
 ```
 
-### Production Deployment
+### Project Structure (v3.0)
 
-```bash
-# Build
-pnpm build
-
-# Start production server
-pnpm start
+```
+acdante-itops-inspection/
+├── _vendor/dbcheck/               # DBCheck v2.6.0 engine (10 DB types)
+├── backend/
+│   ├── dbcheck_bridge/            # DBCheck integration layer
+│   │   ├── dbcheck_wrapper.py     # Core wrapper for DBCheck
+│   │   ├── dbcheck_config.py      # Type mapping & config
+│   │   ├── dbcheck_templates.py   # Template sync
+│   │   └── dbcheck_updater.py     # Version management
+│   ├── snmp_engine/               # SNMP collection engine
+│   │   ├── snmp_collector.py      # SNMP v1/v2c/v3 collector
+│   │   ├── snmp_oid_registry.py   # 136 OIDs, 11 vendor MIBs
+│   │   └── snmp_templates.py      # 12 device templates
+│   ├── report_engine/             # Report generation engine
+│   │   ├── docx_generator.py      # Editable DOCX reports
+│   │   ├── pdf_generator.py       # PDF reports (WeasyPrint)
+│   │   └── report_generator.py    # Unified API
+│   ├── api/routes.py              # REST API (SNMP + Reports + DBCheck)
+│   └── main.py                    # FastAPI entry point
+├── src/
+│   ├── app/
+│   │   ├── snmp/                  # SNMP management page
+│   │   ├── dbcheck/               # Database inspection config page
+│   │   ├── reports/               # Enhanced report page
+│   │   └── api/v1/[...path]/      # Next.js API routes (26 templates)
+│   ├── components/layout/         # UI components
+│   └── lib/api.ts                 # TypeScript API client
+└── database/schema.sql            # Updated schema (DBCheck + SNMP tables)
 ```
 
 ### Architecture
 
 ```
 Browser → Next.js (5000) → /api/v1/*
-  (Production) → Go API Gateway (8080) → Rust Data Engine (8081)
-                                          → Python Driver → SSH/SNMP/JDBC → Target Devices
-                                          → Report Engine → DOCX/HTML/PDF
+         → Python FastAPI (8000)
+              ├── SNMP Engine → SNMP v1/v2c/v3 → Network Devices
+              ├── Report Engine → DOCX/PDF/HTML Reports
+              └── DBCheck Bridge → DBCheck Engine → 10 Database Types
+
+(Production) → Go API Gateway (8080) → Rust Data Engine (8081)
+                                      → Python Driver → SSH/SNMP/JDBC → Target Devices
+```
+
+### Version History
+
+| Version | Date | Highlights |
+|---------|------|------------|
+| **v3.0.0** | 2026-06 | DBCheck DB engine, SNMP engine, DOCX/PDF reports, 26 templates, 10 DB types |
+| v2.0.0 | 2026-06 | SNMP templates, report engine foundation |
+| v1.0.0 | 2026-05 | Initial release: Next.js frontend, basic inspection |
+
+### Updating DBCheck
+
+DBCheck is integrated as a vendor module. To update:
+
+```bash
+# Option 1: Git update (if DBCheck repo is accessible)
+cd _vendor/dbcheck
+git pull origin main
+
+# Option 2: Manual update
+# Download latest from https://github.com/fiyo/DBCheck
+# Replace _vendor/dbcheck/ directory
+
+# Option 3: Lock to specific version
+cd _vendor/dbcheck
+git checkout v2.5.0
 ```
 
 ### Documentation
@@ -97,20 +170,31 @@ Apache License 2.0
 
 企业级IT基础设施巡检平台，支持多协议、多对象自动化巡检，提供可定制的巡检模板、任务调度和全面的报告生成功能。
 
+> **最新: v3.0.0** — DBCheck 数据库巡检引擎集成 + SNMP 采集引擎 + 完整 DOCX/PDF 报告生成
+
+---
+
+### 🆕 v3.0.0 更新内容
+
+| 功能 | 说明 |
+|------|------|
+| **DBCheck 数据库引擎** | 集成 [DBCheck v2.6.0](https://github.com/fiyo/DBCheck) — 10种数据库、130+ YAML规则、5维度健康评分、AI诊断 |
+| **SNMP 采集引擎** | Python SNMP v1/v2c/v3 采集器，136个内置OID，12个设备模板（华为/华三/思科/Dell/F5等） |
+| **DOCX/PDF 报告** | 完整DOCX（可编辑）和PDF报告生成，含封面、健康仪表盘、问题汇总、详细结果 |
+| **模板大幅扩展** | 26个内置巡检模板（12个SNMP + 7个DBCheck数据库 + 7个基础设施） |
+
 ### 核心功能
 
-| 模块 | 描述 |
-|------|------|
-| **巡检对象管理** | 20+设备类型，7种连接协议（SSH/SNMP/JDBC/IPMI/Redfish/HTTP/Telnet） |
-| **巡检模板引擎** | 20+内置模板，支持版本/品牌标记，自定义巡检项 |
-| **巡检任务调度** | 7种调度周期（一次性/每分钟/每小时/每天/每周/每月/季度），自定义时间点 |
-| **巡检报告生成** | HTML/DOCX/PDF格式，综合报告整合，AI智能分析 |
-| **设备配置备份** | 版本对比，FTP/NFS/S3/本地存储，定时备份 |
-| **IP地址管理** | 网段可视化，TCPING/PING探测，手动标记，历史探测记录 |
-| **巡检知识库** | 自定义内容，置顶/标记，贴图支持 |
-| **系统管理** | 用户管理，审计日志，4种通知渠道（邮件/钉钉/微信/飞书） |
-| **主题切换** | 5套主题（深色科技/浅色商务/多巴胺/绿野/日落） |
-| **AI智能分析** | OpenAI兼容接口，深度分析和诊断 |
+| 模块 | v1.0 | v3.0 |
+|------|------|------|
+| **巡检对象** | 20+设备类型，7种协议 | **27+设备类型，8种协议**（新增dbcheck） |
+| **巡检模板** | 12个内置模板 | **26个内置模板**（12 SNMP + 7 DBCheck数据库 + 7 基础设施） |
+| **数据库巡检** | 4种DB，5-10项/DB | **10种DB，50-130+项/DB**（DBCheck驱动） |
+| **SNMP监控** | 基础SNMP支持 | **完整SNMP引擎**，136 OID，12厂商模板 |
+| **报告生成** | 仅HTML | **DOCX + PDF + HTML**，可编辑Word报告 |
+| **任务调度** | 7种周期 | 7种周期 + DBCheck集成 |
+| **规则引擎** | 简单阈值 | **YAML规则引擎**（130+规则）+ 安全沙箱 |
+| **健康评分** | 简单加权 | **5维度评分**（性能/安全/配置/容量/可用性） |
 
 ### 支持的巡检对象
 
@@ -118,18 +202,20 @@ Apache License 2.0
 - **网络设备**：华为/华三交换机、路由器、防火墙、F5负载均衡
 - **SAN交换机**：Brocade、Cisco、华为、联想OEM
 - **存储设备**：华为OceanStor、EMC、NetApp
-- **数据库**：Oracle（11g/12c/19c）、MySQL 8.0、PostgreSQL 15、SQL Server
+- **数据库**：Oracle（11g/12c/19c/21c）、MySQL 5.7/8.0/8.4、PostgreSQL 12-16、SQL Server 2016-2022
+- **国产数据库**：达梦 DM8、TiDB、KingbaseES、GBase 8s、IvorySQL、YashanDB（DBCheck驱动）
 - **BMC管理**：Dell iDRAC（Redfish）、IPMI
-- **虚拟化**：VMware ESXi、vCenter、深信服HCI、华三CAS
-- **云平台**：阿里云、腾讯云、华为云
+- **安全设备**：深信服、Checkpoint、Cisco ASA、华为 USG
 - **K8s集群**：节点状态、Pod运行、资源使用
 
 ### 技术栈
 
 ```
 前端：  Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui
-后端：  Next.js API Routes（生产环境：Go + Rust + Python）
+后端：  Next.js API Routes + Python FastAPI（SNMP/报告/DBCheck）
+       生产环境：Go + Rust + Python
 数据库：SQLite（开发）/ PostgreSQL（生产）
+引擎：  DBCheck v2.6.0（数据库巡检）+ PySNMP（SNMP）+ python-docx/WeasyPrint（报告）
 ```
 
 ### 快速开始
@@ -139,32 +225,92 @@ Apache License 2.0
 git clone https://github.com/acdante-zhang/acdante-itops-inspection.git
 cd acdante-itops-inspection
 
-# 安装依赖
+# 安装前端依赖
 pnpm install
 
-# 启动开发服务器
+# 安装Python依赖（SNMP + 报告 + DBCheck）
+python3 -m venv venv
+source venv/bin/activate
+pip install pysnmp python-docx weasyprint fastapi uvicorn jinja2 matplotlib pymysql psycopg2-binary docxtpl pyyaml cryptography paramiko
+
+# 启动Python后端API（端口8000）
+python3 -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 &
+
+# 启动前端开发服务器（端口5000）
 pnpm dev
 
 # 访问 http://localhost:5000
 ```
 
-### 生产环境部署
+### 项目结构（v3.0）
 
-```bash
-# 构建
-pnpm build
-
-# 启动生产服务器
-pnpm start
+```
+acdante-itops-inspection/
+├── _vendor/dbcheck/               # DBCheck v2.6.0 引擎（10种数据库）
+├── backend/
+│   ├── dbcheck_bridge/            # DBCheck 集成桥接层
+│   │   ├── dbcheck_wrapper.py     # DBCheck 核心包装器
+│   │   ├── dbcheck_config.py      # 类型映射配置
+│   │   ├── dbcheck_templates.py   # 模板同步器
+│   │   └── dbcheck_updater.py     # 版本更新管理
+│   ├── snmp_engine/               # SNMP 采集引擎
+│   │   ├── snmp_collector.py      # SNMP v1/v2c/v3 采集器
+│   │   ├── snmp_oid_registry.py   # 136 OID，11厂商MIB库
+│   │   └── snmp_templates.py      # 12个设备SNMP模板
+│   ├── report_engine/             # 报告生成引擎
+│   │   ├── docx_generator.py      # 可编辑DOCX报告
+│   │   ├── pdf_generator.py       # PDF报告（WeasyPrint）
+│   │   └── report_generator.py    # 统一API入口
+│   ├── api/routes.py              # REST API（SNMP + 报告 + DBCheck）
+│   └── main.py                    # FastAPI 入口
+├── src/
+│   ├── app/
+│   │   ├── snmp/                  # SNMP管理页面
+│   │   ├── dbcheck/               # 数据库巡检配置页
+│   │   ├── reports/               # 增强报告页面
+│   │   └── api/v1/[...path]/      # Next.js API路由（26个模板）
+│   ├── components/layout/         # UI组件
+│   └── lib/api.ts                 # TypeScript API客户端
+└── database/schema.sql            # 更新后的Schema（DBCheck + SNMP表）
 ```
 
 ### 系统架构
 
 ```
 浏览器 → Next.js (5000) → /api/v1/*
-  (生产环境) → Go API网关 (8080) → Rust数据引擎 (8081)
-                                    → Python驱动 → SSH/SNMP/JDBC → 目标设备
-                                    → 报告引擎 → DOCX/HTML/PDF
+        → Python FastAPI (8000)
+             ├── SNMP 引擎 → SNMP v1/v2c/v3 → 网络设备
+             ├── 报告引擎 → DOCX/PDF/HTML 报告
+             └── DBCheck 桥接 → DBCheck 引擎 → 10种数据库
+
+(生产环境) → Go API网关 (8080) → Rust数据引擎 (8081)
+                                 → Python驱动 → SSH/SNMP/JDBC → 目标设备
+```
+
+### 版本历史
+
+| 版本 | 日期 | 主要内容 |
+|------|------|----------|
+| **v3.0.0** | 2026-06 | DBCheck数据库引擎、SNMP采集引擎、DOCX/PDF报告、26个模板、10种DB |
+| v2.0.0 | 2026-06 | SNMP模板、报告引擎基础 |
+| v1.0.0 | 2026-05 | 初始版本：Next.js前端、基础巡检功能 |
+
+### 更新 DBCheck
+
+DBCheck 作为内置模块集成。更新方法：
+
+```bash
+# 方式1: Git更新（DBCheck仓库可访问时）
+cd _vendor/dbcheck
+git pull origin main
+
+# 方式2: 手动更新
+# 从 https://github.com/fiyo/DBCheck 下载最新版
+# 替换 _vendor/dbcheck/ 目录
+
+# 方式3: 锁定特定版本
+cd _vendor/dbcheck
+git checkout v2.5.0
 ```
 
 ### 文档

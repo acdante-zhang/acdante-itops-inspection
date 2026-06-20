@@ -9,6 +9,8 @@ __pycache__/
 *.o
 *.a
 /vendor
+venv/
+.venv/
 *.egg-info/
 /.env
 .env

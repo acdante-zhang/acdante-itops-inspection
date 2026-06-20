@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Monitor, FileText, ListChecks, FileBarChart,
   BookOpen, Settings, ChevronDown, ChevronRight, Shield,
-  Server, Network, Database, HardDrive, Cpu,
+  Server, Network, Database, HardDrive, Cpu, Radio,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -38,6 +38,18 @@ const navGroups: NavGroup[] = [
       { label: '巡检模板', path: '/templates', icon: <FileText size={16} /> },
       { label: '巡检任务', path: '/tasks', icon: <ListChecks size={16} /> },
     ],
+  },
+  {
+    label: 'SNMP管理', icon: <Radio size={18} />,
+    path: '/snmp',
+    badge: 'NEW',
+    badgeColor: 'bg-green-500/20 text-green-400',
+  },
+  {
+    label: '数据库巡检', icon: <Database size={18} />,
+    path: '/dbcheck',
+    badge: 'DBCheck',
+    badgeColor: 'bg-purple-500/20 text-purple-400',
   },
   {
     label: '巡检报告', icon: <FileBarChart size={18} />,
@@ -74,7 +86,7 @@ export default function Sidebar() {
         <h1 className="text-lg font-bold text-cyan-400 flex items-center gap-2">
           <Shield size={22} /> Acdante
         </h1>
-        <p className="text-xs text-slate-400 mt-1">IT运维巡检平台 v1.0</p>
+        <p className="text-xs text-slate-400 mt-1">IT运维巡检平台 v3.0</p>
       </div>
 
       <nav className="flex-1 p-2 space-y-0.5">

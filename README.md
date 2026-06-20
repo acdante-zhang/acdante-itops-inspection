@@ -1,4 +1,4 @@
-# AcdanteSQLMon
+# Acdante ITOps Inspection Platform
 
 [English](#english) | [中文](#中文)
 
@@ -6,163 +6,172 @@
 
 <a id="english"></a>
 
-## AcdanteSQLMon — Lightweight Oracle Deadlock & Slow SQL Monitoring Platform
+## Acdante ITOps Inspection Platform
 
-A lightweight, real-time monitoring platform for Oracle database deadlock detection and slow SQL analysis. Supports Oracle 10g/11g/19c/23c/26ai with full RAC cluster compatibility.
+Enterprise-grade IT infrastructure inspection platform supporting multi-protocol, multi-device automated inspection with customizable templates, task scheduling, and comprehensive reporting.
 
 ### Features
 
 | Module | Description |
 |--------|-------------|
-| **Wait Events** | Real-time wait event monitoring with INST_ID distinction, GV$ global view queries, wait class color coding, and event explanation panel |
-| **Lock Analysis** | Lock relationship directed graph (Canvas), deadlock detection with red markers, holder client info, drill-down to SQL text, client IP detection (SQL + LSOF) |
-| **Wait Analysis** | Historical wait event timeline (Recharts), wait class pie chart, TOP slow SQL correlation analysis, configurable time ranges (10m/30m/1h/6h/24h) |
-| **Instance Management** | Multi-version driver adaptation (oracledb thin mode for 19c+, cx_Oracle + Instant Client for 10g/11g), test connection, health cards |
-| **One-Click Kill** | Verification code + double confirmation dialog, full audit logging (SQL/locks/client/session info), ALTER SYSTEM KILL + kill -9 dual commands |
-| **Event Guide** | 15+ common wait event knowledge base with causes, resolutions, and Oracle official documentation links |
-| **Custom SQL** | SQL editor with syntax highlighting, preset query templates, save custom templates, safety filtering (SELECT/WITH only), CSV export |
+| **Inspection Objects** | 20+ device types, 7 connection protocols (SSH/SNMP/JDBC/IPMI/Redfish/HTTP/Telnet) |
+| **Inspection Templates** | 20+ built-in templates with version/brand marking, custom inspection items |
+| **Task Scheduling** | 7 scheduling cycles (once/minutely/hourly/daily/weekly/monthly/quarterly), custom time points |
+| **Report Generation** | HTML/DOCX/PDF formats, composite reports, AI-powered analysis |
+| **Config Backup** | Version comparison, FTP/NFS/S3/local storage, scheduled backups |
+| **IP Management** | Network segment visualization, TCPING/PING detection, manual marking, history records |
+| **Knowledge Base** | Custom content, pin/bookmark, image support |
+| **System Management** | User management, audit logs, 4 notification channels (Email/DingTalk/WeChat/Feishu) |
+| **Theme Switching** | 5 built-in themes (Dark Tech/Light Business/Dopamine/Greenfield/Sunset) |
+| **AI Analysis** | OpenAI-compatible API, deep analysis and diagnosis |
 
-### Architecture
+### Supported Inspection Objects
 
-```
-Browser → Next.js (5000) → Go API Gateway (8080) → /api/v1/*
-                                    ↓
-                            Rust Data Engine (8081) → /api/v1/analysis/*
-                                    ↓
-                            Python Driver → Oracle Database
-```
+- **Operating Systems**: Linux, Windows, AIX
+- **Network Devices**: Huawei/H3C switches, routers, firewalls, F5 load balancers
+- **SAN Switches**: Brocade, Cisco, Huawei, Lenovo OEM
+- **Storage**: Huawei OceanStor, EMC, NetApp
+- **Databases**: Oracle (11g/12c/19c), MySQL 8.0, PostgreSQL 15, SQL Server
+- **BMC**: Dell iDRAC (Redfish), IPMI
+- **Virtualization**: VMware ESXi, vCenter, Sangfor HCI, H3C CAS
+- **Cloud**: Alibaba Cloud, Tencent Cloud, Huawei Cloud
+- **Kubernetes**: Node status, Pod runtime, resource usage
 
 ### Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js 16, React 19, TypeScript 5, shadcn/ui, Tailwind CSS 4, Recharts |
-| API Gateway | Go 1.23, Gin v1.10, SQLite, CORS |
-| Data Engine | Rust (actix-web 4) — code ready |
-| Driver Layer | Python (oracledb / cx_Oracle) |
-| Scripts | Shell (Bash) |
+```
+Frontend:  Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui
+Backend:   Next.js API Routes (Production: Go + Rust + Python)
+Database:  SQLite (Dev) / PostgreSQL (Production)
+```
 
 ### Quick Start
 
 ```bash
-# Clone the repository
-git clone https://github.com/chunxi01/AcdanteSQLMon.git
-cd AcdanteSQLMon
+# Clone repository
+git clone https://github.com/acdante-zhang/acdante-itops-inspection.git
+cd acdante-itops-inspection
 
-# Install frontend dependencies
+# Install dependencies
 pnpm install
 
-# Build Go backend
-cd go-server && go build -o acdante-sqlmon . && cd ..
+# Start development server
+pnpm dev
 
-# Start development
-bash scripts/dev.sh
+# Visit http://localhost:5000
 ```
 
-### API Endpoints
+### Production Deployment
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | /api/v1/health | Health check |
-| GET | /api/v1/dashboard/stats | Dashboard statistics |
-| GET | /api/v1/wait-events | Wait events list |
-| GET | /api/v1/locks | Lock information |
-| GET | /api/v1/locks/graph | Lock relationship graph |
-| GET | /api/v1/wait-analysis | Wait event history analysis |
-| GET | /api/v1/wait-analysis/top-sql | TOP slow SQL ranking |
-| GET | /api/v1/instances | Instance list |
-| POST | /api/v1/instances | Add instance |
-| POST | /api/v1/instances/:id/test | Test instance connection |
-| GET | /api/v1/kill/candidates | Killable sessions |
-| POST | /api/v1/kill/execute | Execute kill |
-| GET | /api/v1/kill/audit | Kill audit log |
-| GET | /api/v1/event-guide | Wait event knowledge base |
-| GET | /api/v1/custom-sql/templates | SQL query templates |
-| POST | /api/v1/custom-sql/execute | Execute custom SQL |
-| GET | /api/v1/sessions/:sid/detail | Session detail drill-down |
-| GET | /api/v1/sessions/:sid/client-ip | Client IP detection (SQL+LSOF) |
+```bash
+# Build
+pnpm build
 
-### Oracle Version Compatibility
+# Start production server
+pnpm start
+```
 
-| Version | Driver | Instant Client Required | Connection Mode |
-|---------|--------|------------------------|-----------------|
-| 10g | cx_Oracle | Yes (Basic + SDK) | Thick mode |
-| 11g | cx_Oracle | Yes (Basic + SDK) | Thick mode |
-| 19c | oracledb | No | Thin mode |
-| 23c | oracledb | No | Thin mode |
-| 26ai | oracledb | No | Thin mode |
+### Architecture
+
+```
+Browser → Next.js (5000) → /api/v1/*
+  (Production) → Go API Gateway (8080) → Rust Data Engine (8081)
+                                          → Python Driver → SSH/SNMP/JDBC → Target Devices
+                                          → Report Engine → DOCX/HTML/PDF
+```
+
+### Documentation
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Detailed architecture design
+- [AGENTS.md](./AGENTS.md) - Development guidelines
 
 ### License
 
-MIT License — see [LICENSE](./LICENSE)
+Apache License 2.0
 
 ---
 
 <a id="中文"></a>
 
-## AcdanteSQLMon — 轻量化 Oracle 死锁与卡慢 SQL 监控平台
+## Acdante ITOps Inspection Platform
 
-轻量化的 Oracle 数据库死锁/卡慢 SQL 实时监控平台，支持 Oracle 10g/11g/19c/23c/26ai 全版本，兼容 RAC 集群环境。
+企业级IT基础设施巡检平台，支持多协议、多对象自动化巡检，提供可定制的巡检模板、任务调度和全面的报告生成功能。
 
-### 功能模块
+### 核心功能
 
-| 模块 | 说明 |
+| 模块 | 描述 |
 |------|------|
-| **等待事件展示** | 实时等待事件监控，区分 INST_ID，查询 GV$ 全局视图，等待分类色标，事件解释面板 |
-| **锁分析与死锁检测** | Canvas 锁关系有向图，死锁红色标记，持有者客户端信息，下钻 SQL 文本，客户端 IP 检测（SQL+LSOF） |
-| **等待事件分析** | 历史等待事件时序折线图（Recharts），等待类别饼图，TOP 卡慢 SQL 关联分析，可配置时间范围（10m/30m/1h/6h/24h） |
-| **实例管理** | 多版本驱动适配（19c+ 用 oracledb thin mode，10g/11g 用 cx_Oracle + Instant Client），测试连接，健康卡片 |
-| **一键查杀** | 验证码 + 二次确认弹窗，完整审计日志（SQL/锁/客户端/会话信息），ALTER SYSTEM KILL + kill -9 双方案 |
-| **等待事件知识库** | 15+ 常见等待事件知识库，含原因、解决建议、Oracle 官方文档链接 |
-| **自定义 SQL** | SQL 编辑器，预设查询模板，保存自定义模板，安全过滤（仅允许 SELECT/WITH），CSV 导出 |
+| **巡检对象管理** | 20+设备类型，7种连接协议（SSH/SNMP/JDBC/IPMI/Redfish/HTTP/Telnet） |
+| **巡检模板引擎** | 20+内置模板，支持版本/品牌标记，自定义巡检项 |
+| **巡检任务调度** | 7种调度周期（一次性/每分钟/每小时/每天/每周/每月/季度），自定义时间点 |
+| **巡检报告生成** | HTML/DOCX/PDF格式，综合报告整合，AI智能分析 |
+| **设备配置备份** | 版本对比，FTP/NFS/S3/本地存储，定时备份 |
+| **IP地址管理** | 网段可视化，TCPING/PING探测，手动标记，历史探测记录 |
+| **巡检知识库** | 自定义内容，置顶/标记，贴图支持 |
+| **系统管理** | 用户管理，审计日志，4种通知渠道（邮件/钉钉/微信/飞书） |
+| **主题切换** | 5套主题（深色科技/浅色商务/多巴胺/绿野/日落） |
+| **AI智能分析** | OpenAI兼容接口，深度分析和诊断 |
 
-### 架构
+### 支持的巡检对象
 
-```
-浏览器 → Next.js (5000) → Go API 网关 (8080) → /api/v1/*
-                                    ↓
-                            Rust 数据引擎 (8081) → /api/v1/analysis/*
-                                    ↓
-                            Python 驱动 → Oracle 数据库
-```
+- **操作系统**：Linux、Windows、AIX
+- **网络设备**：华为/华三交换机、路由器、防火墙、F5负载均衡
+- **SAN交换机**：Brocade、Cisco、华为、联想OEM
+- **存储设备**：华为OceanStor、EMC、NetApp
+- **数据库**：Oracle（11g/12c/19c）、MySQL 8.0、PostgreSQL 15、SQL Server
+- **BMC管理**：Dell iDRAC（Redfish）、IPMI
+- **虚拟化**：VMware ESXi、vCenter、深信服HCI、华三CAS
+- **云平台**：阿里云、腾讯云、华为云
+- **K8s集群**：节点状态、Pod运行、资源使用
 
 ### 技术栈
 
-| 层级 | 技术 |
-|------|------|
-| 前端 | Next.js 16, React 19, TypeScript 5, shadcn/ui, Tailwind CSS 4, Recharts |
-| API 网关 | Go 1.23, Gin v1.10, SQLite, CORS |
-| 数据引擎 | Rust (actix-web 4) — 代码已就绪 |
-| 驱动层 | Python (oracledb / cx_Oracle) |
-| 脚本 | Shell (Bash) |
+```
+前端：  Next.js 16 + React 19 + TypeScript + Tailwind CSS 4 + shadcn/ui
+后端：  Next.js API Routes（生产环境：Go + Rust + Python）
+数据库：SQLite（开发）/ PostgreSQL（生产）
+```
 
-### 快速启动
+### 快速开始
 
 ```bash
 # 克隆仓库
-git clone https://github.com/chunxi01/AcdanteSQLMon.git
-cd AcdanteSQLMon
+git clone https://github.com/acdante-zhang/acdante-itops-inspection.git
+cd acdante-itops-inspection
 
-# 安装前端依赖
+# 安装依赖
 pnpm install
 
-# 编译 Go 后端
-cd go-server && go build -o acdante-sqlmon . && cd ..
+# 启动开发服务器
+pnpm dev
 
-# 启动开发环境
-bash scripts/dev.sh
+# 访问 http://localhost:5000
 ```
 
-### Oracle 版本兼容性
+### 生产环境部署
 
-| 版本 | 驱动 | 需要 Instant Client | 连接模式 |
-|------|------|---------------------|----------|
-| 10g | cx_Oracle | 是（Basic + SDK） | Thick mode |
-| 11g | cx_Oracle | 是（Basic + SDK） | Thick mode |
-| 19c | oracledb | 否 | Thin mode |
-| 23c | oracledb | 否 | Thin mode |
-| 26ai | oracledb | 否 | Thin mode |
+```bash
+# 构建
+pnpm build
 
-### 许可证
+# 启动生产服务器
+pnpm start
+```
 
-MIT License — 详见 [LICENSE](./LICENSE)
+### 系统架构
+
+```
+浏览器 → Next.js (5000) → /api/v1/*
+  (生产环境) → Go API网关 (8080) → Rust数据引擎 (8081)
+                                    → Python驱动 → SSH/SNMP/JDBC → 目标设备
+                                    → 报告引擎 → DOCX/HTML/PDF
+```
+
+### 文档
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - 详细架构设计说明
+- [AGENTS.md](./AGENTS.md) - 开发规范
+
+### 开源协议
+
+Apache License 2.0

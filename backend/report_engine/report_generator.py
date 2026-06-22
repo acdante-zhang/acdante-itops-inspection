@@ -7,7 +7,10 @@ import os
 import sys
 from . import (
     InspectionReportData, ReportConfig, ReportGenerator,
-    build_report_data_from_inspection, OUTPUT_DIR
+    build_report_data_from_inspection, build_report_data_from_device_results,
+    OUTPUT_DIR,
+    DeviceType, DeviceInfo, InspectionSection, InspectionCheckItem,
+    DeviceInspectionResult,
 )
 
 # 暴露所有公共接口
@@ -16,9 +19,16 @@ __all__ = [
     'ReportConfig',
     'ReportGenerator',
     'build_report_data_from_inspection',
+    'build_report_data_from_device_results',
     'generate_report',
+    'generate_device_report',
     'generate_sample_reports',
     'OUTPUT_DIR',
+    'DeviceType',
+    'DeviceInfo',
+    'InspectionSection',
+    'InspectionCheckItem',
+    'DeviceInspectionResult',
 ]
 
 
@@ -69,6 +79,71 @@ def generate_report(
             paths['html'] = gen.generate_html()
         except Exception as e:
             paths['html_error'] = str(e)
+    
+    if format in ("docx", "all"):
+        try:
+            paths['docx'] = gen.generate_docx()
+        except Exception as e:
+            paths['docx_error'] = str(e)
+    
+    if format in ("pdf", "all"):
+        try:
+            paths['pdf'] = gen.generate_pdf()
+        except Exception as e:
+            paths['pdf_error'] = str(e)
+    
+    return {
+        "report_id": data.report_id,
+        "task_name": data.task_name,
+        "task_id": data.task_id,
+        "health_score": data.health_score,
+        "total_items": data.total_items,
+        "ok_count": data.ok_count,
+        "warning_count": data.warning_count,
+        "critical_count": data.critical_count,
+        "summary": data.summary,
+        "generated_at": data.generated_at,
+        "paths": paths,
+        "issues": data.issues,
+        "recommendations": data.recommendations,
+    }
+
+
+def generate_device_report(
+    task_name: str,
+    task_id: str,
+    device_results: list,
+    format: str = "docx",
+    config: dict = None,
+) -> dict:
+    """
+    从设备巡检结果生成模板化巡检报告
+    
+    Args:
+        task_name: 任务名称
+        task_id: 任务ID
+        device_results: DeviceInspectionResult 列表
+        format: 输出格式 "docx" 或 "pdf"
+        config: 报告配置字典
+    
+    Returns:
+        {"report_id": "...", "paths": {...}, ...}
+    """
+    report_config = ReportConfig()
+    if config:
+        for key, value in config.items():
+            if hasattr(report_config, key):
+                setattr(report_config, key, value)
+    
+    data = build_report_data_from_device_results(
+        task_name=task_name,
+        task_id=task_id,
+        device_results=device_results,
+        config=report_config,
+    )
+    
+    gen = ReportGenerator(data)
+    paths = {}
     
     if format in ("docx", "all"):
         try:

@@ -25,6 +25,78 @@ class ReportFormat(str, Enum):
     PDF = "pdf"
 
 
+class DeviceType(str, Enum):
+    """设备类型枚举"""
+    ROUTER = "router"
+    SWITCH = "switch"
+    FIREWALL = "firewall"
+    LOAD_BALANCER = "load_balancer"
+    SERVER = "server"
+    STORAGE = "storage"
+    SAN_SWITCH = "san_switch"
+    VMWARE = "vmware"
+    IBM_MINICOMPUTER = "ibm_minicomputer"
+    BLADE_CENTER = "blade_center"
+    BACKUP = "backup"
+    IPS = "ips"
+    WAF = "waf"
+    VPN = "vpn"
+    BASTION = "bastion"
+    NETGAP = "netgap"  # 网闸
+    TAPE_LIBRARY = "tape_library"
+    DATABASE = "database"
+    OTHER = "other"
+
+
+@dataclass
+class DeviceInfo:
+    """设备基本信息"""
+    name: str = ""                    # 设备名称 (如: 生产边界路由器)
+    ip: str = ""                      # 管理IP
+    device_type: DeviceType = DeviceType.OTHER
+    brand: str = ""                   # 品牌 (H3C/华为/EMC/IBM等)
+    model: str = ""                   # 型号
+    serial_number: str = ""           # 序列号
+    os_version: str = ""              # 系统版本
+    hardware_config: Dict = field(default_factory=dict)  # 硬件配置
+    location: str = ""                # 位置
+    role: str = ""                    # 角色/用途
+    extra_info: Dict = field(default_factory=dict)  # 额外信息
+
+
+@dataclass
+class InspectionCheckItem:
+    """单个巡检检查项"""
+    name: str                         # 检查内容名称
+    operation: str = ""               # 检查操作/命令
+    result: str = ""                  # 巡检结果
+    status: str = "ok"                # ok/warning/critical/error/skipped
+    raw_value: str = ""               # 原始值
+    threshold: str = ""               # 阈值
+    suggestion: str = ""              # 建议
+    screenshot: str = ""              # 截图说明
+
+
+@dataclass
+class InspectionSection:
+    """巡检检查分区 (如: 基本信息检查、设备运行状态检查、协议检查等)"""
+    title: str
+    items: List[InspectionCheckItem] = field(default_factory=list)
+    section_type: str = "check"  # info / check / protocol / security
+    extra_data: Dict = field(default_factory=dict)  # 额外数据 (如基本信息的key-value)
+
+
+@dataclass
+class DeviceInspectionResult:
+    """单台设备的完整巡检结果"""
+    device: DeviceInfo = field(default_factory=DeviceInfo)
+    sections: List[InspectionSection] = field(default_factory=list)
+    overall_status: str = "ok"        # 整体状态
+    summary: str = ""                 # 设备巡检总结
+    inspection_date: str = ""         # 巡检日期
+    inspector: str = ""               # 巡检人员
+
+
 @dataclass
 class ReportSection:
     """报告章节"""
@@ -40,9 +112,21 @@ class ReportConfig:
     title: str = "IT基础设施巡检报告"
     subtitle: str = ""
     platform_name: str = "Acdante ITOps Inspection Platform"
-    company_name: str = ""
+    company_name: str = ""            # 客户单位名称
+    client_contact: str = ""          # 客户联系人
+    client_phone: str = ""            # 客户联系电话
+    contract_number: str = ""         # 合同编号
     inspector: str = ""
     report_date: str = ""
+    inspection_period: str = ""       # 巡检周期 (如: 月度/季度)
+    inspection_date_range: str = ""   # 巡检时间范围 (如: 2024.09.23-9.29)
+    service_team: str = ""            # 技术服务团队
+    engineers: List[Dict] = field(default_factory=list)  # 巡检工程师列表
+    service_content: str = ""         # 巡检服务内容
+    report_authors: List[str] = field(default_factory=list)  # 报告编写人
+    report_reviewer: str = ""         # 报告审批人
+    author_date: str = ""             # 编写日期
+    reviewer_date: str = ""           # 审批日期
     include_cover: bool = True
     include_toc: bool = True
     include_charts: bool = True
@@ -74,6 +158,10 @@ class InspectionReportData:
     ai_analysis: str = ""
     recommendations: List[str] = field(default_factory=list)
     config: ReportConfig = field(default_factory=ReportConfig)
+    # 新增: 设备巡检结果列表 (用于模板化报告)
+    device_results: List[DeviceInspectionResult] = field(default_factory=list)
+    # 新增: 报告分区标题列表
+    report_sections: List[str] = field(default_factory=list)
     
     def __post_init__(self):
         if not self.generated_at:
@@ -291,4 +379,100 @@ def build_report_data_from_inspection(
         categories=categories,
         recommendations=recommendations,
         config=config or ReportConfig(),
+    )
+
+
+def build_report_data_from_device_results(
+    task_name: str,
+    task_id: str,
+    device_results: List["DeviceInspectionResult"],
+    config: Optional[ReportConfig] = None,
+) -> InspectionReportData:
+    """从设备巡检结果构建报告数据 (模板化报告)"""
+    from .device_templates import DeviceType
+
+    # 统计
+    total = 0
+    ok_count = 0
+    warning_count = 0
+    critical_count = 0
+    error_count = 0
+    skipped_count = 0
+
+    for dr in device_results:
+        for sec in dr.sections:
+            for item in sec.items:
+                total += 1
+                status = item.status
+                if status == "ok":
+                    ok_count += 1
+                elif status == "warning":
+                    warning_count += 1
+                elif status == "critical":
+                    critical_count += 1
+                elif status == "error":
+                    error_count += 1
+                elif status == "skipped":
+                    skipped_count += 1
+
+    # 健康度评分
+    if total > 0:
+        health_score = int((ok_count * 100 + warning_count * 50) / total)
+    else:
+        health_score = 100
+
+    # 问题列表
+    issues = []
+    for dr in device_results:
+        for sec in dr.sections:
+            for item in sec.items:
+                if item.status in ("warning", "critical", "error"):
+                    issues.append({
+                        "target_name": dr.device.name,
+                        "item_name": item.name,
+                        "category": sec.title,
+                        "status": item.status,
+                        "value": item.raw_value or item.result,
+                        "threshold": item.threshold,
+                        "suggestion": item.suggestion,
+                    })
+
+    # 摘要
+    if critical_count > 0:
+        summary = f"巡检发现 {critical_count} 个严重问题、{warning_count} 个警告，健康度评分 {health_score} 分。"
+    elif warning_count > 0:
+        summary = f"巡检发现 {warning_count} 个警告项，整体运行基本正常，健康度评分 {health_score} 分。"
+    else:
+        summary = f"所有巡检项均正常，系统运行良好，健康度评分 {health_score} 分。"
+
+    # 建议
+    recommendations = []
+    for issue in issues[:5]:
+        if issue.get("suggestion"):
+            recommendations.append(f"[{issue['target_name']}] {issue['item_name']}: {issue['suggestion']}")
+
+    targets = [
+        {"name": dr.device.name, "type": dr.device.device_type.value, "brand": dr.device.brand}
+        for dr in device_results
+    ]
+
+    return InspectionReportData(
+        task_name=task_name,
+        task_id=task_id,
+        target_count=len(device_results),
+        health_score=health_score,
+        total_items=total,
+        ok_count=ok_count,
+        warning_count=warning_count,
+        critical_count=critical_count,
+        error_count=error_count,
+        skipped_count=skipped_count,
+        summary=summary,
+        targets=targets,
+        results=[],
+        issues=issues,
+        categories=[],
+        recommendations=recommendations,
+        config=config or ReportConfig(),
+        device_results=device_results,
     )

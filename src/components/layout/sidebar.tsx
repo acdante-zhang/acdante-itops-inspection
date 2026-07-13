@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Monitor, FileText, ListChecks, FileBarChart,
   BookOpen, Settings, ChevronDown, ChevronRight, Shield,
-  Server, Network, Database, HardDrive, Cpu, Radio,
+  Server, Network, Database, HardDrive, Cpu, Radio, Globe,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -44,6 +44,12 @@ const navGroups: NavGroup[] = [
     path: '/snmp',
     badge: 'NEW',
     badgeColor: 'bg-green-500/20 text-green-400',
+  },
+  {
+    label: 'HTTP集成', icon: <Globe size={18} />,
+    path: '/http-integration',
+    badge: 'NEW',
+    badgeColor: 'bg-cyan-500/20 text-cyan-400',
   },
   {
     label: '数据库巡检', icon: <Database size={18} />,

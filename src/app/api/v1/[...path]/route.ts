@@ -493,6 +493,98 @@ function getDashboardStats() {
 }
 
 // ============================================================
+// HTTP Integration Mock Data
+// ============================================================
+
+interface HTTPDeviceData {
+  id: string; name: string; brand: string; model: string; base_url: string; port: number;
+  use_https: boolean; auth_type: string; username: string; password_enc: string;
+  login_url: string; username_field: string; password_field: string; submit_selector: string;
+  tls_min_version: string; tls_max_version: string; verify_cert: boolean;
+  accept_self_signed: boolean; custom_headers: Record<string, string>; cipher_suites: string[];
+  timeout: number; status: string; cert_status: string; cert_expiry: string | null;
+  last_check: string | null; compat_mode: boolean; tags: string[]; created_at: string;
+}
+
+interface SSLCertData {
+  id: string; device_id: string; device_name: string; subject: string; issuer: string;
+  serial: string; valid_from: string; valid_to: string; status: string;
+  is_self_signed: boolean; key_size: number; signature_algorithm: string;
+  san: string[]; imported: boolean; trusted: boolean;
+}
+
+interface HTTPInspItem {
+  id: string; device_id: string; name: string; category: string; method: string;
+  url_path: string; request_body: string; content_type: string;
+  parser_type: string; parser_expression: string;
+  threshold: { operator: string; critical: number; warning: number; unit: string } | null;
+  is_read_only: boolean; weight: number; order: number;
+  screenshot_config?: {
+    url_path: string; navigation_mode: 'url' | 'menu';
+    menu_selectors: string[]; wait_condition: 'networkidle' | 'selector' | 'timeout';
+    wait_timeout: number; wait_selector: string;
+    capture_area: 'full_page' | 'viewport' | 'selector';
+    capture_selector: string; viewport_width: number; viewport_height: number;
+    word_template_position: string; word_section_title: string;
+  };
+}
+
+interface HTTPExecLog {
+  id: string; device_id: string; device_name: string; started_at: string;
+  completed_at: string | null; status: string;
+  total_items: number; completed_items: number; ok_count: number; warning_count: number;
+  critical_count: number; error_count: number; cert_warning: string | null;
+}
+
+const httpDevices: HTTPDeviceData[] = [
+  { id: "http-dev-001", name: "\u603B\u90E8\u9632\u706B\u5899-USG6625", brand: "huawei_fw", model: "USG6625", base_url: "10.0.1.254", port: 443, use_https: true, auth_type: "form", username: "admin", password_enc: "encrypted:***", login_url: "/api/v1/sys/user/login", username_field: "username", password_field: "password", submit_selector: "button[type=submit]", tls_min_version: "TLSv1.2", tls_max_version: "TLSv1.3", verify_cert: true, accept_self_signed: false, custom_headers: { "X-Requested-With": "XMLHttpRequest" }, cipher_suites: [], timeout: 30, status: "connected", cert_status: "self_signed", cert_expiry: "2027-03-15T00:00:00Z", last_check: ago(0.5), compat_mode: false, tags: ["\u6838\u5FC3\u7F51\u7EDC", "\u9632\u706B\u5899"], created_at: ago(720) },
+  { id: "http-dev-002", name: "\u8FB9\u754C\u5B89\u5168\u7F51\u5173-Sangfor", brand: "sangfor", model: "AF-1000", base_url: "10.0.2.10", port: 443, use_https: true, auth_type: "form", username: "admin", password_enc: "encrypted:***", login_url: "/cgi-bin/login.cgi", username_field: "user", password_field: "pwd", submit_selector: "#login-btn", tls_min_version: "TLSv1.2", tls_max_version: "TLSv1.3", verify_cert: false, accept_self_signed: true, custom_headers: {}, cipher_suites: [], timeout: 30, status: "connected", cert_status: "self_signed", cert_expiry: "2026-12-01T00:00:00Z", last_check: ago(1), compat_mode: false, tags: ["\u8FB9\u754C\u5B89\u5168"], created_at: ago(600) },
+  { id: "http-dev-003", name: "\u8001\u65E7\u9632\u706B\u5899-TopSec", brand: "topsec", model: "NGFW3000", base_url: "10.0.3.1", port: 443, use_https: true, auth_type: "form", username: "admin", password_enc: "encrypted:***", login_url: "/login", username_field: "userName", password_field: "passWord", submit_selector: "#submit", tls_min_version: "TLSv1.0", tls_max_version: "TLSv1.2", verify_cert: false, accept_self_signed: true, custom_headers: {}, cipher_suites: ["RSA_AES_128_CBC_SHA", "RSA_AES_256_CBC_SHA"], timeout: 60, status: "connected", cert_status: "expiring", cert_expiry: "2026-08-20T00:00:00Z", last_check: ago(2), compat_mode: true, tags: ["\u8001\u8BBE\u5907", "\u517C\u5BB9\u6A21\u5F0F"], created_at: ago(1440) },
+  { id: "http-dev-004", name: "FortiGate-60F", brand: "fortinet", model: "FG-60F", base_url: "10.0.4.1", port: 443, use_https: true, auth_type: "form", username: "admin", password_enc: "encrypted:***", login_url: "/logincheck", username_field: "username", password_field: "password", submit_selector: "input[type=submit]", tls_min_version: "TLSv1.2", tls_max_version: "TLSv1.3", verify_cert: true, accept_self_signed: false, custom_headers: {}, cipher_suites: [], timeout: 30, status: "disconnected", cert_status: "valid", cert_expiry: "2028-06-10T00:00:00Z", last_check: ago(24), compat_mode: false, tags: ["\u5206\u652F\u673A\u623F"], created_at: ago(360) },
+  { id: "http-dev-005", name: "\u542F\u660E\u661F\u8FB9\u754C\u9632\u706B\u5899", brand: "venusec", model: "Venusense-GF", base_url: "10.0.5.100", port: 443, use_https: true, auth_type: "form", username: "admin", password_enc: "encrypted:***", login_url: "/login.html", username_field: "username", password_field: "password", submit_selector: "#loginBtn", tls_min_version: "TLSv1.1", tls_max_version: "TLSv1.2", verify_cert: false, accept_self_signed: true, custom_headers: {}, cipher_suites: ["RSA_AES_128_CBC_SHA"], timeout: 45, status: "error", cert_status: "expired", cert_expiry: "2025-12-31T00:00:00Z", last_check: ago(48), compat_mode: true, tags: ["\u8001\u8BBE\u5907", "\u5F85\u66F4\u6362"], created_at: ago(2160) },
+];
+
+const httpCerts: SSLCertData[] = [
+  { id: "cert-001", device_id: "http-dev-001", device_name: "\u603B\u90E8\u9632\u706B\u5899-USG6625", subject: "CN=10.0.1.254, O=Huawei, OU=IT", issuer: "CN=10.0.1.254, O=Huawei", serial: "0A:1B:2C:3D:4E:5F", valid_from: "2024-03-15T00:00:00Z", valid_to: "2027-03-15T00:00:00Z", status: "self_signed", is_self_signed: true, key_size: 2048, signature_algorithm: "SHA256withRSA", san: ["10.0.1.254", "usg6625.local"], imported: false, trusted: true },
+  { id: "cert-002", device_id: "http-dev-002", device_name: "\u8FB9\u754C\u5B89\u5168\u7F51\u5173-Sangfor", subject: "CN=10.0.2.10, O=Sangfor", issuer: "CN=10.0.2.10, O=Sangfor", serial: "11:22:33:44:55:66", valid_from: "2023-12-01T00:00:00Z", valid_to: "2026-12-01T00:00:00Z", status: "self_signed", is_self_signed: true, key_size: 2048, signature_algorithm: "SHA256withRSA", san: ["10.0.2.10"], imported: false, trusted: true },
+  { id: "cert-003", device_id: "http-dev-003", device_name: "\u8001\u65E7\u9632\u706B\u5899-TopSec", subject: "CN=topsec.local, O=TopSec", issuer: "CN=TopSec CA", serial: "AA:BB:CC:DD:EE:FF", valid_from: "2023-08-20T00:00:00Z", valid_to: "2026-08-20T00:00:00Z", status: "expiring", is_self_signed: false, key_size: 1024, signature_algorithm: "SHA1withRSA", san: ["topsec.local", "10.0.3.1"], imported: true, trusted: true },
+  { id: "cert-004", device_id: "http-dev-004", device_name: "FortiGate-60F", subject: "CN=10.0.4.1, O=Fortinet", issuer: "CN=Fortinet CA, O=Fortinet", serial: "FF:EE:DD:CC:BB:AA", valid_from: "2025-06-10T00:00:00Z", valid_to: "2028-06-10T00:00:00Z", status: "valid", is_self_signed: false, key_size: 4096, signature_algorithm: "SHA256withRSA", san: ["10.0.4.1", "fortigate.local"], imported: false, trusted: true },
+  { id: "cert-005", device_id: "http-dev-005", device_name: "\u542F\u660E\u661F\u8FB9\u754C\u9632\u706B\u5899", subject: "CN=venus.local, O=Venustech", issuer: "CN=venus.local, O=Venustech", serial: "00:11:22:33:44:55", valid_from: "2022-01-01T00:00:00Z", valid_to: "2025-12-31T00:00:00Z", status: "expired", is_self_signed: true, key_size: 1024, signature_algorithm: "SHA1withRSA", san: ["venus.local", "10.0.5.100"], imported: true, trusted: false },
+];
+
+const httpItems: HTTPInspItem[] = [
+  { id: "hi-001", device_id: "http-dev-001", name: "\u7CFB\u7EDF\u7248\u672C\u4FE1\u606F", category: "\u7CFB\u7EDF\u4FE1\u606F", method: "GET", url_path: "/api/v1/sys/info", request_body: "", content_type: "application/json", parser_type: "json_path", parser_expression: "$.data.version", threshold: null, is_read_only: true, weight: 5, order: 1 },
+  { id: "hi-002", device_id: "http-dev-001", name: "CPU\u4F7F\u7528\u7387", category: "\u6027\u80FD\u76D1\u63A7", method: "GET", url_path: "/api/v1/monitor/cpu", request_body: "", content_type: "application/json", parser_type: "json_path", parser_expression: "$.data.usage_percent", threshold: { operator: "gt", critical: 90, warning: 70, unit: "%" }, is_read_only: true, weight: 20, order: 2 },
+  { id: "hi-003", device_id: "http-dev-001", name: "\u5185\u5B58\u4F7F\u7528\u7387", category: "\u6027\u80FD\u76D1\u63A7", method: "GET", url_path: "/api/v1/monitor/memory", request_body: "", content_type: "application/json", parser_type: "json_path", parser_expression: "$.data.usage_percent", threshold: { operator: "gt", critical: 90, warning: 80, unit: "%" }, is_read_only: true, weight: 20, order: 3 },
+  { id: "hi-004", device_id: "http-dev-001", name: "\u5B89\u5168\u7B56\u7565\u72B6\u6001", category: "\u5B89\u5168\u7B56\u7565", method: "GET", url_path: "/api/v1/security/policy/status", request_body: "", content_type: "application/json", parser_type: "json_path", parser_expression: "$.data.active_policies", threshold: null, is_read_only: true, weight: 15, order: 4 },
+  { id: "hi-005", device_id: "http-dev-001", name: "\u8BC1\u4E66\u72B6\u6001", category: "\u8BC1\u4E66\u72B6\u6001", method: "GET", url_path: "/api/v1/sys/cert/status", request_body: "", content_type: "application/json", parser_type: "json_path", parser_expression: "$.data.cert_valid", threshold: null, is_read_only: true, weight: 10, order: 5 },
+  { id: "hi-006", device_id: "http-dev-003", name: "\u7CFB\u7EDF\u72B6\u6001\u6458\u8981", category: "\u7CFB\u7EDF\u4FE1\u606F", method: "GET", url_path: "/api/system/status", request_body: "", content_type: "application/json", parser_type: "json_path", parser_expression: "$.result.status", threshold: null, is_read_only: true, weight: 10, order: 1 },
+  { id: "hi-007", device_id: "http-dev-003", name: "\u5F53\u524D\u4F1A\u8BDD\u6570", category: "\u6027\u80FD\u76D1\u63A7", method: "GET", url_path: "/api/system/sessions", request_body: "", content_type: "application/json", parser_type: "json_path", parser_expression: "$.result.active_sessions", threshold: { operator: "gt", critical: 10000, warning: 5000, unit: "\u4F1A\u8BDD" }, is_read_only: true, weight: 15, order: 2 },
+  { id: "hi-008", device_id: "http-dev-003", name: "\u5A01\u80C1\u65E5\u5FD7\u7EDF\u8BA1", category: "\u65E5\u5FD7\u5BA1\u8BA1", method: "POST", url_path: "/api/log/threat/query", request_body: '{"time_range":"24h","limit":10}', content_type: "application/json", parser_type: "json_path", parser_expression: "$.result.total_count", threshold: { operator: "gt", critical: 1000, warning: 100, unit: "\u6761" }, is_read_only: true, weight: 20, order: 3 },
+  { id: "hi-ss-1", device_id: "http-dev-001", name: "\u7BA1\u7406\u754C\u9762\u603B\u89C8", category: "\u622A\u56FE\u5DE1\u68C0", method: "GET", url_path: "/", request_body: "", content_type: "", parser_type: "screenshot", parser_expression: "", threshold: null, is_read_only: true, weight: 5, order: 10, screenshot_config: { url_path: "/", navigation_mode: "url", menu_selectors: [], wait_condition: "networkidle", wait_timeout: 10, wait_selector: "", capture_area: "full_page", capture_selector: "", viewport_width: 1920, viewport_height: 1080, word_template_position: "3.1", word_section_title: "\u8BBE\u5907\u72B6\u6001\u603B\u89C8" } },
+  { id: "hi-ss-2", device_id: "http-dev-001", name: "\u5B89\u5168\u7B56\u7565\u9875\u9762", category: "\u622A\u56FE\u5DE1\u68C0", method: "GET", url_path: "/security/policy", request_body: "", content_type: "", parser_type: "screenshot", parser_expression: "", threshold: null, is_read_only: true, weight: 5, order: 11, screenshot_config: { url_path: "/security/policy", navigation_mode: "menu", menu_selectors: ["a[href*='security']", "a[href*='policy']"], wait_condition: "selector", wait_timeout: 8, wait_selector: ".policy-table", capture_area: "selector", capture_selector: ".policy-table", viewport_width: 1920, viewport_height: 1080, word_template_position: "3.2", word_section_title: "\u5B89\u5168\u7B56\u7565\u72B6\u6001" } },
+  { id: "hi-ss-3", device_id: "http-dev-001", name: "\u7CFB\u7EDF\u65E5\u5FD7\u9875\u9762", category: "\u622A\u56FE\u5DE1\u68C0", method: "GET", url_path: "/log/system", request_body: "", content_type: "", parser_type: "screenshot", parser_expression: "", threshold: null, is_read_only: true, weight: 5, order: 12, screenshot_config: { url_path: "/log/system", navigation_mode: "menu", menu_selectors: ["a[href*='log']", "a[href*='system']"], wait_condition: "networkidle", wait_timeout: 10, wait_selector: "", capture_area: "viewport", capture_selector: "", viewport_width: 1920, viewport_height: 1080, word_template_position: "3.3", word_section_title: "\u7CFB\u7EDF\u65E5\u5FD7" } },
+];
+
+const httpLogs: HTTPExecLog[] = [
+  { id: "log-001", device_id: "http-dev-001", device_name: "\u603B\u90E8\u9632\u706B\u5899-USG6625", started_at: ago(2), completed_at: ago(1.9), status: "completed", total_items: 5, completed_items: 5, ok_count: 4, warning_count: 1, critical_count: 0, error_count: 0, cert_warning: null },
+  { id: "log-002", device_id: "http-dev-001", device_name: "\u603B\u90E8\u9632\u706B\u5899-USG6625", started_at: ago(26), completed_at: ago(25.9), status: "completed", total_items: 5, completed_items: 5, ok_count: 5, warning_count: 0, critical_count: 0, error_count: 0, cert_warning: null },
+  { id: "log-003", device_id: "http-dev-003", device_name: "\u8001\u65E7\u9632\u706B\u5899-TopSec", started_at: ago(3), completed_at: ago(2.8), status: "partial", total_items: 3, completed_items: 2, ok_count: 1, warning_count: 1, critical_count: 0, error_count: 1, cert_warning: "\u8BC1\u4E66\u5373\u5C06\u8FC7\u671F\uFF0C\u5EFA\u8BAE\u5C3D\u5FEB\u66F4\u65B0" },
+  { id: "log-004", device_id: "http-dev-005", device_name: "\u542F\u660E\u661F\u8FB9\u754C\u9632\u706B\u5899", started_at: ago(48), completed_at: ago(47.9), status: "failed", total_items: 0, completed_items: 0, ok_count: 0, warning_count: 0, critical_count: 0, error_count: 1, cert_warning: "SSL\u8BC1\u4E66\u5DF2\u8FC7\u671F\uFF0C\u65E0\u6CD5\u5EFA\u7ACB\u5B89\u5168\u8FDE\u63A5" },
+];
+
+const httpScreenshots: Array<Record<string, unknown>> = [
+  { id: "ss-001", device_id: "http-dev-001", device_name: "\u603B\u90E8\u9632\u706B\u5899-USG6625", item_id: "hi-ss-1", item_name: "\u7BA1\u7406\u754C\u9762\u603B\u89C8", url: "https://10.0.1.254:443/", captured_at: ago(2), width: 1920, height: 1080, file_size: 245760, thumbnail_url: "", status: "success", error_message: null, login_page: false, full_page: true },
+  { id: "ss-002", device_id: "http-dev-001", device_name: "\u603B\u90E8\u9632\u706B\u5899-USG6625", item_id: "hi-ss-2", item_name: "\u767B\u5F55\u9875\u9762", url: "https://10.0.1.254:443/api/v1/sys/user/login", captured_at: ago(2), width: 1920, height: 1080, file_size: 189440, thumbnail_url: "", status: "success", error_message: null, login_page: true, full_page: false },
+  { id: "ss-003", device_id: "http-dev-001", device_name: "\u603B\u90E8\u9632\u706B\u5899-USG6625", item_id: "hi-ss-3", item_name: "\u5B89\u5168\u7B56\u7565\u6982\u89C8", url: "https://10.0.1.254:443/policy/overview", captured_at: ago(2), width: 1920, height: 2400, file_size: 512000, thumbnail_url: "", status: "success", error_message: null, login_page: false, full_page: true },
+  { id: "ss-004", device_id: "http-dev-002", device_name: "\u8FB9\u754C\u5B89\u5168\u7F51\u5173-Sangfor", item_id: "hi-ss-4", item_name: "\u5B89\u5168\u6001\u52BF\u4EEA\u8868\u76D8", url: "https://10.0.2.10:443/", captured_at: ago(5), width: 1920, height: 1080, file_size: 312320, thumbnail_url: "", status: "success", error_message: null, login_page: false, full_page: false },
+  { id: "ss-005", device_id: "http-dev-002", device_name: "\u8FB9\u754C\u5B89\u5168\u7F51\u5173-Sangfor", item_id: "hi-ss-5", item_name: "\u5A01\u80C1\u65E5\u5FD7\u9875\u9762", url: "https://10.0.2.10:443/log/threat", captured_at: ago(5), width: 1920, height: 1080, file_size: 278400, thumbnail_url: "", status: "success", error_message: null, login_page: false, full_page: false },
+  { id: "ss-006", device_id: "http-dev-003", device_name: "\u8001\u65E7\u9632\u706B\u5899-TopSec", item_id: "hi-ss-6", item_name: "\u7CFB\u7EDF\u72B6\u6001\u9875\u9762", url: "https://topsec.local:443/status.html", captured_at: ago(3), width: 1024, height: 768, file_size: 156672, thumbnail_url: "", status: "success", error_message: null, login_page: false, full_page: false },
+  { id: "ss-007", device_id: "http-dev-003", device_name: "\u8001\u65E7\u9632\u706B\u5899-TopSec", item_id: "hi-ss-7", item_name: "\u8BBF\u95EE\u63A7\u5236\u7B56\u7565", url: "https://topsec.local:443/acl.html", captured_at: ago(3), width: 0, height: 0, file_size: 0, thumbnail_url: "", status: "failed", error_message: "\u9875\u9762\u52A0\u8F7D\u8D85\u65F6\uFF0C\u8BBE\u5907\u54CD\u5E94\u8FC7\u6162", login_page: false, full_page: false },
+  { id: "ss-008", device_id: "http-dev-005", device_name: "\u542F\u660E\u661F\u8FB9\u754C\u9632\u706B\u5899", item_id: "hi-ss-8", item_name: "\u7CFB\u7EDF\u4EEA\u8868\u76D8", url: "https://10.0.5.10:443/", captured_at: ago(26), width: 1920, height: 1080, file_size: 298880, thumbnail_url: "", status: "success", error_message: null, login_page: false, full_page: true },
+];
+
+// ============================================================
 // Catch-all Route Handler
 // ============================================================
 
@@ -616,6 +708,144 @@ async function handleRequest(request: NextRequest, pathSegments: string[]) {
   const methodRoutes = routes[method];
   if (methodRoutes && methodRoutes[path]) {
     return methodRoutes[path](request, []);
+  }
+
+  // ============================================================
+  // HTTP Integration Routes
+  // ============================================================
+  if (path.startsWith('http-integration/')) {
+    const sub = path.replace('http-integration/', '');
+
+    // GET /api/v1/http-integration/devices
+    if (sub === 'devices' && method === 'GET') {
+      return NextResponse.json(httpDevices);
+    }
+
+    // POST /api/v1/http-integration/devices
+    if (sub === 'devices' && method === 'POST') {
+      const body = await request.json();
+      const newDev: HTTPDeviceData = {
+        id: `http-dev-${String(httpDevices.length + 1).padStart(3, '0')}`,
+        name: body.name || '', brand: body.brand || 'generic', model: body.model || '',
+        base_url: body.base_url || '', port: body.port || 443,
+        use_https: body.use_https !== false, auth_type: body.auth_type || 'form',
+        username: body.username || '', password_enc: body.password_enc || '',
+        login_url: body.login_url || '', username_field: body.username_field || '',
+        password_field: body.password_field || '', submit_selector: body.submit_selector || '',
+        tls_min_version: body.tls_min_version || 'TLSv1.2', tls_max_version: body.tls_max_version || 'TLSv1.3',
+        verify_cert: body.verify_cert !== false, accept_self_signed: body.accept_self_signed || false,
+        custom_headers: body.custom_headers || {}, cipher_suites: body.cipher_suites || [],
+        timeout: body.timeout || 30, status: 'disconnected', cert_status: 'unknown',
+        cert_expiry: null, last_check: null, compat_mode: body.compat_mode || false,
+        tags: body.tags || [], created_at: new Date().toISOString(),
+      };
+      httpDevices.push(newDev);
+      return NextResponse.json(newDev);
+    }
+
+    // DELETE /api/v1/http-integration/devices/:id
+    if (sub.startsWith('devices/') && method === 'DELETE') {
+      const id = sub.replace('devices/', '').split('/')[0];
+      const idx = httpDevices.findIndex(d => d.id === id);
+      if (idx >= 0) httpDevices.splice(idx, 1);
+      return NextResponse.json({ success: true });
+    }
+
+    // POST /api/v1/http-integration/devices/:id/test
+    if (sub.includes('/test') && method === 'POST') {
+      const id = sub.split('/')[1];
+      const dev = httpDevices.find(d => d.id === id);
+      if (!dev) return NextResponse.json({ error: '设备不存在' }, { status: 404 });
+      const statuses: Array<'connected' | 'error'> = ['connected', 'connected', 'connected', 'error'];
+      const certStatuses: Array<'valid' | 'expiring' | 'expired' | 'self_signed'> = ['valid', 'self_signed', 'expiring', 'expired'];
+      dev.status = statuses[Math.floor(Math.random() * statuses.length)];
+      dev.cert_status = certStatuses[Math.floor(Math.random() * certStatuses.length)];
+      dev.last_check = new Date().toISOString();
+      return NextResponse.json({ success: true, status: dev.status, cert_status: dev.cert_status, latency_ms: Math.floor(Math.random() * 200) + 50, tls_version: dev.tls_min_version, cert_info: { subject: dev.base_url, issuer: dev.accept_self_signed ? 'Self-signed' : 'CA', valid: dev.cert_status !== 'expired' } });
+    }
+
+    // POST /api/v1/http-integration/devices/:id/run
+    if (sub.includes('/run') && method === 'POST') {
+      const id = sub.split('/')[1];
+      const dev = httpDevices.find(d => d.id === id);
+      if (!dev) return NextResponse.json({ error: '设备不存在' }, { status: 404 });
+      const devItems = httpItems.filter(i => i.device_id === id);
+      const log: HTTPExecLog = {
+        id: `log-${String(httpLogs.length + 1).padStart(3, '0')}`, device_id: id, device_name: dev.name,
+        started_at: new Date().toISOString(), completed_at: new Date(Date.now() + 5000).toISOString(),
+        status: 'completed', total_items: devItems.length, completed_items: devItems.length,
+        ok_count: Math.floor(devItems.length * 0.8), warning_count: Math.floor(devItems.length * 0.15),
+        critical_count: Math.floor(devItems.length * 0.05), error_count: 0,
+        cert_warning: dev.cert_status === 'expired' ? 'SSL证书已过期' : dev.cert_status === 'expiring' ? '证书即将过期，建议尽快更新' : null,
+      };
+      httpLogs.unshift(log);
+      return NextResponse.json({ success: true, log_id: log.id });
+    }
+
+    // GET /api/v1/http-integration/certs
+    if (sub === 'certs' && method === 'GET') {
+      return NextResponse.json(httpCerts);
+    }
+
+    // POST /api/v1/http-integration/certs
+    if (sub === 'certs' && method === 'POST') {
+      const body = await request.json();
+      const newCert: SSLCertData = {
+        id: `cert-${String(httpCerts.length + 1).padStart(3, '0')}`,
+        device_id: body.device_id, device_name: body.device_name || '',
+        subject: `CN=${body.device_id}, O=Imported`, issuer: 'Imported CA',
+        serial: Array.from({ length: 6 }, () => Math.floor(Math.random() * 256).toString(16).toUpperCase().padStart(2, '0')).join(':'),
+        valid_from: new Date().toISOString(), valid_to: new Date(Date.now() + 365 * 86400000).toISOString(),
+        status: 'valid', is_self_signed: false, key_size: 2048, signature_algorithm: 'SHA256withRSA',
+        san: [], imported: true, trusted: body.trusted !== false,
+      };
+      httpCerts.push(newCert);
+      return NextResponse.json(newCert);
+    }
+
+    // GET /api/v1/http-integration/items
+    if (sub === 'items' && method === 'GET') {
+      return NextResponse.json(httpItems);
+    }
+
+    // POST /api/v1/http-integration/items
+    if (sub === 'items' && method === 'POST') {
+      const body = await request.json();
+      const newItem: HTTPInspItem = {
+        id: `hi-${String(httpItems.length + 1).padStart(3, '0')}`,
+        device_id: body.device_id, name: body.name || '', category: body.category || '\u7CFB\u7EDF\u4FE1\u606F',
+        method: body.method || 'GET', url_path: body.url_path || '',
+        request_body: body.request_body || '', content_type: body.content_type || 'application/json',
+        parser_type: body.parser_type || 'json_path', parser_expression: body.parser_expression || '',
+        threshold: body.threshold || null, is_read_only: body.is_read_only !== false,
+        weight: body.weight || 10, order: body.order || httpItems.length + 1,
+      };
+      httpItems.push(newItem);
+      return NextResponse.json(newItem);
+    }
+
+    // GET /api/v1/http-integration/logs
+    if (sub === 'logs' && method === 'GET') {
+      return NextResponse.json(httpLogs);
+    }
+
+    // GET /api/v1/http-integration/screenshots
+    if (sub === 'screenshots' && method === 'GET') {
+      return NextResponse.json(httpScreenshots);
+    }
+
+    // POST /api/v1/http-integration/devices/:id/capture
+    const captureMatch = sub.match(/^devices\/([^/]+)\/capture$/);
+    if (captureMatch && method === 'POST') {
+      const dev = httpDevices.find(d => d.id === captureMatch[1]);
+      if (!dev) return NextResponse.json({ error: 'Device not found' }, { status: 404 });
+      const newScreenshots = [
+        { id: `ss-${Date.now()}-1`, device_id: dev.id, device_name: dev.name, item_id: 'hi-ss-1', item_name: '\u7BA1\u7406\u754C\u9762\u603B\u89C8', url: `${dev.use_https ? 'https' : 'http'}://${dev.base_url}:${dev.port}/`, captured_at: new Date().toISOString(), width: 1920, height: 1080, file_size: 245760, thumbnail_url: '', status: 'success' as const, error_message: null, login_page: false, full_page: true },
+        { id: `ss-${Date.now()}-2`, device_id: dev.id, device_name: dev.name, item_id: 'hi-ss-2', item_name: '\u767B\u5F55\u9875\u9762', url: `${dev.use_https ? 'https' : 'http'}://${dev.base_url}:${dev.port}${dev.login_url || '/login'}`, captured_at: new Date().toISOString(), width: 1920, height: 1080, file_size: 189440, thumbnail_url: '', status: 'success' as const, error_message: null, login_page: true, full_page: false },
+      ];
+      httpScreenshots.unshift(...newScreenshots);
+      return NextResponse.json({ success: true, captured: newScreenshots.length });
+    }
   }
 
   return NextResponse.json({ error: `Not found: ${method} ${path}` }, { status: 404 });

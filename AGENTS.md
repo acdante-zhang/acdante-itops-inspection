@@ -10,6 +10,7 @@
 - 巡检任务调度（一次性/周期执行、通知策略）
 - 报告生成（HTML/DOCX/PDF、健康度评分、问题汇总）
 - 巡检知识库（常见问题解析、排查方法）
+- HTTP/HTTPS设备集成（自动登录、证书管理、TLS兼容模式）
 - 系统设置（安全策略、通知配置）
 
 **支持巡检对象类型**：
@@ -61,6 +62,7 @@
 │   │   ├── tasks/page.tsx        # 巡检任务管理
 │   │   ├── reports/page.tsx      # 巡检报告
 │   │   ├── knowledge/page.tsx    # 巡检知识库
+│   │   ├── http-integration/page.tsx  # HTTP/HTTPS设备集成
 │   │   ├── settings/page.tsx     # 系统设置
 │   │   └── api/v1/[...path]/route.ts  # API 路由（模拟后端）
 │   ├── components/
@@ -101,8 +103,18 @@
 | POST | /api/v1/reports/generate | 生成报告 |
 | GET | /api/v1/knowledge | 知识库列表 |
 | GET | /api/v1/knowledge/:id | 知识库详情 |
+| GET | /api/v1/http-integration/devices | HTTP设备连接列表 |
+| POST | /api/v1/http-integration/devices | 创建HTTP设备连接 |
+| DELETE | /api/v1/http-integration/devices/:id | 删除HTTP设备连接 |
+| POST | /api/v1/http-integration/devices/:id/test | HTTP连接测试 |
+| POST | /api/v1/http-integration/devices/:id/run | 执行HTTP巡检 |
+| GET | /api/v1/http-integration/certs | SSL证书列表 |
+| POST | /api/v1/http-integration/certs | 导入SSL证书 |
+| GET | /api/v1/http-integration/items | HTTP巡检项列表 |
+| POST | /api/v1/http-integration/items | 创建HTTP巡检项 |
+| GET | /api/v1/http-integration/logs | 执行日志列表 |
 
-## 页面模块 (7个)
+## 页面模块 (10个)
 
 ### 总览仪表盘 (/)
 - 统计卡片（巡检对象/模板/严重问题/今日报告）
@@ -138,6 +150,15 @@
 - 常见问题卡片（症状/原因/解决方案）
 - 搜索与分类筛选
 - 严重程度标记、参考文档链接
+
+### HTTP/HTTPS设备集成 (/http-integration)
+- 针对无SSH/SNMP接口的安全设备、老旧设备，通过HTTP/HTTPS协议自动登录设备Web管理界面采集巡检数据
+- 设备连接管理（支持华为USG、深信服、天融信、启明星辰、FortiGate、Palo Alto等品牌预置）
+- 多种认证方式（表单登录/Basic Auth/Token/OAuth2/Cookie）
+- SSL证书管理（自签名证书导入与信任、证书过期监控、证书链管理）
+- TLS兼容模式（支持TLS 1.0/1.1老协议、弱加密套件、短密钥兼容）
+- HTTP巡检项配置（JSONPath/CSS选择器/XPath/正则表达式解析）
+- 连接测试与执行日志
 
 ### 系统设置 (/settings)
 - 通用设置（平台名称/报告格式/时区）

@@ -47,6 +47,13 @@ const eslintConfig = defineConfig([
     'dist/**',
     // Script files (CommonJS):
     'scripts/**/*.js',
+    // Vendor third-party libraries:
+    '_vendor/**',
+    // Backend/Go/Rust/Python:
+    'backend/**',
+    'go-server/**',
+    'rust-engine/**',
+    'python-driver/**',
   ]),
 ]);
 

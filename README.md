@@ -10,9 +10,22 @@
 
 Enterprise-grade IT infrastructure inspection platform supporting multi-protocol, multi-device automated inspection with customizable templates, task scheduling, and comprehensive reporting.
 
-> **Latest: v3.0.0** — DBCheck Database Engine Integration + SNMP Collection Engine + Full DOCX/PDF Report Generation
+> **Latest: v3.1.0** — Real Inspection Engine + PACS-AI Support + SSH/SNMP/DBCheck/HTTP Unified Scheduling
 
 ---
+
+### 🆕 What's New in v3.1.0
+
+| Feature | Description |
+|---------|-------------|
+| **SSH Inspection Engine** | Paramiko-based SSH execution with device-type adapters (Linux/Huawei/H3C/Cisco/Brocade/AIX) |
+| **Unified Inspection Engine** | SSH/SNMP/DBCheck/HTTP four-protocol unified scheduling |
+| **SQLite Persistence** | Targets, templates, tasks, results, reports stored in SQLite |
+| **Task Scheduler** | APScheduler-based scheduling (hourly/daily/weekly/monthly) |
+| **PACS-AI Templates** | GPU server, vLLM service, PACS system, network device templates |
+| **Real API Routes** | Mock data replaced with real backend integration |
+| **Docker Deployment** | docker-compose one-click deployment |
+| **WebSocket Support** | Real-time task progress push |
 
 ### 🆕 What's New in v3.0.0
 

@@ -443,6 +443,8 @@ def get_dashboard_stats() -> Dict:
 
 def seed_builtin_templates():
     """写入内置模板到数据库"""
+    from backend.templates.pacs_ai_templates import get_pacs_templates_for_db
+    
     builtin_templates = [
         {
             "id": "tpl-linux-generic-v1",
@@ -517,6 +519,9 @@ def seed_builtin_templates():
             ],
         },
     ]
+
+    # 添加 PACS-AI 专用模板
+    builtin_templates.extend(get_pacs_templates_for_db())
 
     for tpl in builtin_templates:
         create_template(tpl)

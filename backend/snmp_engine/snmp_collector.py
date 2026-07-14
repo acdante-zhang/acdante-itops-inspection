@@ -3,11 +3,18 @@ Acdante ITOps - SNMP 数据采集器
 支持 SNMP v1/v2c/v3
 """
 
-from pysnmp.hlapi import *
 import time
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
+import logging
+
+try:
+    from pysnmp.hlapi import *
+    HAS_PYSNMP = True
+except ImportError:
+    HAS_PYSNMP = False
+    logging.warning("pysnmp未安装，SNMP功能不可用")
 
 
 class SNMPVersion(str, Enum):
@@ -64,6 +71,8 @@ class SNMPCollector:
     """SNMP数据采集器"""
     
     def __init__(self, config: SNMPConfig):
+        if not HAS_PYSNMP:
+            raise ImportError("pysnmp未安装，请运行: pip install pysnmp")
         self.config = config
         self._engine = SnmpEngine()
     

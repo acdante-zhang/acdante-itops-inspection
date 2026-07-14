@@ -164,3 +164,7 @@ class SNMPOIDRegistry:
                 if keyword.lower() in key.lower() or keyword.lower() in info["name"].lower():
                     results.append({"vendor": vendor, "key": key, **info})
         return results
+
+
+# 全局OID注册表
+ALL_OID_REGISTRY = SNMPOIDRegistry()

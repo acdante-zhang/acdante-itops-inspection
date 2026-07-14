@@ -1,8 +1,11 @@
-# Oracle ADG 容灾管控平台 - FastAPI 主入口
-# Acdante DR Console Backend Server
+"""
+Acdante ITOps Inspection Platform - FastAPI 主入口
+v3.1.0 - 真实巡检引擎版本
+"""
 
 import sys
 import os
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,35 +14,50 @@ from fastapi.middleware.cors import CORSMiddleware
 # 确保项目根目录在 Python 路径中
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from backend.api.routes import router
-from backend.services.dg_service import get_store
+from backend.api.real_routes import router
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
-    # 启动时初始化数据
-    get_store()
-    print("[Acdante ITOps] 后端服务已启动")
-    print("[Acdante ITOps] SNMP采集引擎 + 报告生成引擎已就绪")
+    # 初始化数据库
+    from backend.core.database import init_db, seed_builtin_templates
+    init_db()
+    seed_builtin_templates()
+    logger.info("数据库已初始化，内置模板已加载")
+
+    # 启动调度器
+    from backend.core.scheduler import task_scheduler
+    task_scheduler.start()
+    logger.info("巡检任务调度器已启动")
+
+    logger.info("Acdante ITOps 后端服务已启动 (v3.1.0)")
+    logger.info("巡检引擎: SSH + SNMP + DBCheck + HTTP")
+    logger.info("数据库: SQLite")
+
     yield
-    print("[Acdante ITOps] 后端服务关闭")
+
+    task_scheduler.stop()
+    logger.info("Acdante ITOps 后端服务已关闭")
 
 
 app = FastAPI(
     title="Acdante ITOps Inspection Platform",
     description="企业级IT基础设施巡检平台 API\n\n"
                 "核心能力:\n"
-                "- 多协议巡检: SSH/SNMP/JDBC/Redfish/HTTP\n"
-                "- 巡检模板: 50+内置设备模板(华为/华三/思科/Dell/F5等)\n"
-                "- 报告生成: DOCX/PDF/HTML多格式报告\n"
-                "- SNMP采集: 支持v1/v2c/v3, 300+内置OID\n\n"
-                "支持 Oracle 10g/11g/19c/23c/26ai 全版本",
-    version="2.0.0",
+                "- SSH巡检: Linux/Windows/AIX/网络设备\n"
+                "- SNMP巡检: v1/v2c/v3, 136+内置OID\n"
+                "- DBCheck巡检: 10种数据库, 130+规则\n"
+                "- HTTP巡检: 防火墙/安全设备Web API\n"
+                "- 定时调度: APScheduler\n"
+                "- 报告生成: DOCX/PDF/HTML",
+    version="3.1.0",
     lifespan=lifespan,
 )
 
-# CORS - 允许前端跨域访问
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,7 +66,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 注册路由
 app.include_router(router)
 
 

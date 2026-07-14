@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.api.real_routes import router
+from backend.api.pacs_routes import router as pacs_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ app.add_middleware(
 )
 
 app.include_router(router)
+app.include_router(pacs_router)
 
 
 if __name__ == "__main__":
